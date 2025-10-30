@@ -38,10 +38,10 @@ import androidx.compose.ui.tooling.preview.Preview
 @Composable
 fun LoginScreen(
     onForgotPassword: () -> Unit = {},
-    onSignUp: () -> Unit = {},
     onLogin: (String, String) -> Unit = { _, _ -> },
+    onSignUp: () -> Unit = {},
     onGoogleLogin: () -> Unit = {},
-    onFacebookLogin: () -> Unit = {}
+//    onFacebookLogin: () -> Unit = {}
 ) {
     // 🔹 State untuk email & password
     var email by remember { mutableStateOf("") }
@@ -99,8 +99,8 @@ fun LoginScreen(
                 singleLine = true,
                 leadingIcon = {
                     Icon(
-                        painter = painterResource(id = R.drawable.ic_user), // 🔹 ikon profil di kiri
-                        contentDescription = "User Icon",
+                        painter = painterResource(id = R.drawable.ic_email), // 🔹 ikon profil di kiri
+                        contentDescription = "Email Icon",
                         tint = Color.Gray // warna ikon abu-abu
                     )
                 },
