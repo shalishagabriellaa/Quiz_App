@@ -6,6 +6,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -13,62 +15,68 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.tubes.R
 import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsHoveredAsState
-import androidx.compose.foundation.interaction.HoverInteraction
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CheckboxDefaults
-import androidx.compose.ui.tooling.preview.Preview
 
 @Preview(
     showBackground = true,
-    showSystemUi = true, // biar tampil seperti di HP (status bar, dll)
+    showSystemUi = true,
     name = "Login Screen Preview"
 )
-
 @Composable
 fun LoginScreen(
     onForgotPassword: () -> Unit = {},
     onLogin: (String, String) -> Unit = { _, _ -> },
     onSignUp: () -> Unit = {},
     onGoogleLogin: () -> Unit = {},
-//    onFacebookLogin: () -> Unit = {}
+    onBack: () -> Unit = {}            // ⬅️ tambah ini untuk panah back
 ) {
-    // 🔹 State untuk email & password
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var passwordVisible by remember { mutableStateOf(false) }
+    var passwordVisible by remember { mutableStateOf(false) } // ⚠️ cukup satu, jangan duplikasi
 
-    // 🔹 Gunakan background dari drawable
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF0A083A)) // warna dominan biru gelap
+            .background(Color(0xFF0A083A))
     ) {
         Image(
-            painter = painterResource(id = R.drawable.background), // background.png
+            painter = painterResource(id = R.drawable.background),
             contentDescription = "Background",
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop
         )
 
-        // 🔹 Konten utama
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(24.dp),
+                .padding(horizontal = 24.dp, vertical = 32.dp), // 24dp kiri & kanan
             horizontalAlignment = Alignment.Start,
             verticalArrangement = Arrangement.Center
         ) {
+            // 🔙 Panah back sejajar kiri dengan teks
+            IconButton(
+                onClick = onBack,
+                modifier = Modifier
+                    .align(Alignment.Start)
+                    .offset(x = (-8).dp)
+                    .size(36.dp)
+                    .padding(bottom = 12.dp) // jarak ke teks
+            ) {
+                Icon(
+                    imageVector = Icons.Default.ArrowBack,
+                    contentDescription = "Back",
+                    tint = Color.White
+                )
+            }
 
             // 🔹 Judul
             Text(
@@ -82,7 +90,6 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 🔹 Deskripsi kecil
             Text(
                 text = "Enter your email and password to sign in",
                 color = Color.White,
@@ -91,17 +98,17 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // 🔹 Field Email dengan background putih dan ikon profil
+            // 🔹 Email
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
-                placeholder = { Text("Email", color = Color.Gray) }, // 🔹 teks placeholder abu-abu
+                placeholder = { Text("Email", color = Color.Gray) },
                 singleLine = true,
                 leadingIcon = {
                     Icon(
-                        painter = painterResource(id = R.drawable.ic_email), // 🔹 ikon profil di kiri
+                        painter = painterResource(id = R.drawable.ic_email),
                         contentDescription = "Email Icon",
-                        tint = Color.Gray // warna ikon abu-abu
+                        tint = Color.Gray
                     )
                 },
                 modifier = Modifier
@@ -109,30 +116,28 @@ fun LoginScreen(
                     .height(56.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = Color.White,      // 🔹 background putih saat fokus
-                    unfocusedContainerColor = Color.White,    // 🔹 background putih saat tidak fokus
-                    focusedBorderColor = Color.Transparent,   // hilangkan border
+                    focusedContainerColor = Color.White,
+                    unfocusedContainerColor = Color.White,
+                    focusedBorderColor = Color.Transparent,
                     unfocusedBorderColor = Color.Transparent,
-                    cursorColor = Color.Black,                // cursor hitam
-                    focusedTextColor = Color.Black,           // teks hitam
+                    cursorColor = Color.Black,
+                    focusedTextColor = Color.Black,
                     unfocusedTextColor = Color.Black
                 )
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 🔹 Field Password dengan ikon mata show/hide
-            var passwordVisible by remember { mutableStateOf(false) } // state untuk visibilitas password
-
+            // 🔹 Password
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
-                placeholder = { Text("Password", color = Color.Gray) }, // placeholder abu-abu
+                placeholder = { Text("Password", color = Color.Gray) },
                 singleLine = true,
                 visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 leadingIcon = {
                     Icon(
-                        painter = painterResource(id = R.drawable.ic_password), // 🔹 ikon gembok di kiri
+                        painter = painterResource(id = R.drawable.ic_password),
                         contentDescription = "Password Icon",
                         tint = Color.Gray
                     )
@@ -140,9 +145,7 @@ fun LoginScreen(
                 trailingIcon = {
                     IconButton(onClick = { passwordVisible = !passwordVisible }) {
                         Icon(
-                            painter = painterResource(
-                                id = if (passwordVisible) R.drawable.ic_eye_open else R.drawable.ic_eye_closed
-                            ),
+                            painter = painterResource(id = if (passwordVisible) R.drawable.ic_eye_open else R.drawable.ic_eye_closed),
                             contentDescription = if (passwordVisible) "Hide Password" else "Show Password",
                             tint = Color.Gray
                         )
@@ -153,19 +156,19 @@ fun LoginScreen(
                     .height(56.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = Color.White,      // background putih saat fokus
-                    unfocusedContainerColor = Color.White,    // background putih saat tidak fokus
-                    focusedBorderColor = Color.Transparent,   // tanpa border
+                    focusedContainerColor = Color.White,
+                    unfocusedContainerColor = Color.White,
+                    focusedBorderColor = Color.Transparent,
                     unfocusedBorderColor = Color.Transparent,
-                    cursorColor = Color.Black,                // cursor hitam
-                    focusedTextColor = Color.Black,           // teks hitam
+                    cursorColor = Color.Black,
+                    focusedTextColor = Color.Black,
                     unfocusedTextColor = Color.Black
                 )
             )
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // 🔹 Baris: Remember me dan Forgot Password
+            // 🔹 Remember + Forgot
             var rememberMe by remember { mutableStateOf(false) }
             val interactionSource = remember { MutableInteractionSource() }
             var isHovered by remember { mutableStateOf(false) }
@@ -177,7 +180,6 @@ fun LoginScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // ✅ Remember me (klik seluruh baris)
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.clickable { rememberMe = !rememberMe }
@@ -199,33 +201,24 @@ fun LoginScreen(
                     )
                 }
 
-                // 🖱️ Forgot Password (efek hover dengan InteractionSource)
                 Text(
                     text = "Forgot Password ?",
                     color = if (isHovered) Color(0xFF73A9FF) else Color(0xFF4A90E2),
                     fontSize = 14.sp,
                     modifier = Modifier
-                        .hoverable( // butuh import foundation
-                            interactionSource = interactionSource,
-                            enabled = true
-                        )
+                        .hoverable(interactionSource = interactionSource, enabled = true)
                         .clickable { onForgotPassword() }
                 )
             }
 
-// 🔹 Deteksi perubahan hover state (gunakan rememberUpdatedState)
             LaunchedEffect(interactionSource) {
-                interactionSource.interactions.collect { interaction ->
-                    when (interaction) {
-                        is androidx.compose.foundation.interaction.HoverInteraction.Enter -> isHovered = true
-                        is androidx.compose.foundation.interaction.HoverInteraction.Exit -> isHovered = false
-                    }
+                interactionSource.interactions.collect { i ->
+                    isHovered = i is androidx.compose.foundation.interaction.HoverInteraction.Enter
                 }
             }
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // 🔹 Tombol Login
             Button(
                 onClick = { onLogin(email, password) },
                 modifier = Modifier
@@ -239,19 +232,17 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // 🔹 Garis pemisah "Or"
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Divider(color = Color.White, thickness = 1.dp, modifier = Modifier.weight(1f))
-                Text("  Or  ", color = Color.White  )
+                Text("  Or  ", color = Color.White)
                 Divider(color = Color.White, thickness = 1.dp, modifier = Modifier.weight(1f))
             }
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // 🔹 Tombol Google
             OutlinedButton(
                 onClick = { onGoogleLogin() },
                 modifier = Modifier
@@ -259,8 +250,8 @@ fun LoginScreen(
                     .height(50.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.outlinedButtonColors(
-                    containerColor = Color.White,        // 🔹 background putih
-                    contentColor = Color.Gray            // 🔹 warna teks & icon abu-abu
+                    containerColor = Color.White,
+                    contentColor = Color.Gray
                 ),
             ) {
                 Icon(
@@ -272,32 +263,14 @@ fun LoginScreen(
                 Text(
                     text = "Continue with Google",
                     color = Color.Black,
-                    fontWeight = FontWeight.Bold         // 🔹 bikin teks bold
+                    fontWeight = FontWeight.Bold
                 )
             }
-
-            // 🔹 Tombol Facebook
-//            OutlinedButton(
-//                onClick = { onFacebookLogin() },
-//                modifier = Modifier
-//                    .fillMaxWidth()
-//                    .height(50.dp),
-//                shape = RoundedCornerShape(12.dp)
-//            ) {
-//                Icon(
-//                    painter = painterResource(id = R.drawable.ic_facebook),
-//                    contentDescription = "Facebook",
-//                    tint = Color.Unspecified
-//                )
-//                Spacer(modifier = Modifier.width(8.dp))
-//                Text("Continue with Facebook", color = Color.White)
-//            }
 
             Spacer(modifier = Modifier.height(24.dp))
 
             Row(
-                modifier = Modifier
-                    .fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -306,23 +279,14 @@ fun LoginScreen(
                     color = Color.LightGray,
                     textAlign = TextAlign.Center
                 )
-
                 Spacer(modifier = Modifier.width(6.dp))
-
                 Text(
                     text = "Sign Up",
-                    color = if (isHovered) Color(0xFF357ABD) else Color(0xFF4A90E2),
+                    color = Color(0xFF4A90E2),
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.clickable(
-                        interactionSource = interactionSource,
-                        indication = null
-                    ) {
-                        // TODO: Ganti aksi sesuai kebutuhan, misalnya navigasi ke RegisterScreen
-                        onSignUp()
-                    }
+                    modifier = Modifier.clickable { onSignUp() }
                 )
             }
-
         }
     }
 }

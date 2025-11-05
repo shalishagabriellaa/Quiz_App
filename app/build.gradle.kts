@@ -55,6 +55,7 @@ dependencies {
     implementation(libs.androidx.compose.foundation.android)
     implementation(libs.androidx.compose.ui.text)
     implementation(libs.androidx.compose.ui.unit)
+    implementation(libs.androidx.compose.foundation)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -65,6 +66,7 @@ dependencies {
     implementation("androidx.compose.ui:ui:1.6.0")
     implementation("androidx.compose.material3:material3:1.2.1")
     implementation("androidx.activity:activity-compose:1.9.0")
+    implementation("androidx.compose.material:material-icons-extended")
     implementation(platform("com.google.firebase:firebase-bom:34.4.0"))
     implementation("com.google.firebase:firebase-firestore-ktx:25.0.0")
 
