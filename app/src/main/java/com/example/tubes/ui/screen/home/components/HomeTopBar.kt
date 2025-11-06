@@ -58,7 +58,7 @@ fun HomeTopBar(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 16.dp, vertical = 28.dp)
+                .padding(horizontal = 16.dp, vertical = 20.dp)
         ) {
             // Top Row
             Box(
@@ -113,7 +113,7 @@ fun HomeTopBar(
                 )
             }
 
-            Spacer(Modifier.height(14.dp))
+            Spacer(Modifier.height(20.dp))
 
             // Search Row
             Row(
