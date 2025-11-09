@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -5,7 +7,12 @@ plugins {
     id("com.google.gms.google-services")
 }
 
+
 android {
+    buildFeatures {
+        compose = true
+        buildConfig = true // Add this line
+    }
     namespace = "com.example.tubes"
     compileSdk = 36
 
@@ -17,7 +24,19 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        val props = Properties()
+        val file = rootProject.file("local.properties")
+        if (file.exists()) {
+            file.inputStream().use { props.load(it) }
+        }
+
+        buildConfigField(
+            "String",
+            "GOOGLE_CLIENT_ID",
+            "\"${props.getProperty("GOOGLE_CLIENT_ID")}\""
+        )
     }
+
 
     buildTypes {
         release {

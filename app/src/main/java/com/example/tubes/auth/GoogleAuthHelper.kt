@@ -7,10 +7,11 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.tasks.await
+import com.example.tubes.BuildConfig
 
 object GoogleAuthHelper {
 
-    private const val WEB_CLIENT_ID = "619965562061-h1cn8ipnhv1m09cpfqm3tgemj1ut9l7n.apps.googleusercontent.com"
+    private const val WEB_CLIENT_ID = BuildConfig.GOOGLE_CLIENT_ID
 
     fun getClient(activity: Activity): GoogleSignInClient {
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
