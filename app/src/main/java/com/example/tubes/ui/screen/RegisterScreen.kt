@@ -1,5 +1,9 @@
 package com.example.tubes.ui.screen
 
+import android.app.Activity
+import android.util.Log
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -12,9 +16,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -24,40 +28,51 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import com.example.tubes.R
+import com.example.tubes.auth.GoogleAuthHelper
 import com.example.tubes.ui.components.SuccessfulPopup
 import com.example.tubes.ui.theme.TubesTheme
 import kotlinx.coroutines.delay
-
-@Preview(showBackground = true, showSystemUi = true)
-@Composable
-fun RegisterScreenPreview() {
-    TubesTheme {
-        RegisterScreen(
-            onCreateAccount = { _, _, _ -> },
-            onGoogleLogin = {},
-            onSignInClick = {},
-            onNavigateAfterSuccess = {}
-        )
-    }
-}
+import com.example.tubes.viewmodel.AuthState
+import com.example.tubes.viewmodel.AuthViewModel
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.common.api.ApiException
 
 @Composable
 fun RegisterScreen(
+    viewModel: AuthViewModel,
+    navController: NavController,
     onCreateAccount: (String, String, String) -> Unit,
-    onGoogleLogin: () -> Unit = {},
     onSignInClick: () -> Unit,
-    // dipakai untuk pindah halaman setelah popup selesai (mis: ke LOGIN)
-    onNavigateAfterSuccess: () -> Unit
-) {
+    onNavigateAfterSuccess: () -> Unit,
+    onRegisterSuccess: () -> Unit,
+
+    ) {
     var fullName by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
-
+    val context = LocalContext.current
+    val activity = context as Activity
+    val authState by viewModel.authState.collectAsState()
     var passwordVisible by remember { mutableStateOf(false) }
     var confirmPasswordVisible by remember { mutableStateOf(false) }
 
+    val googleLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+        try {
+            val account = task.getResult(ApiException::class.java)
+            val idToken = account.idToken
+            if (idToken != null) {
+                viewModel.loginWithGoogle(idToken) // Google register/login auto handled
+            }
+        } catch (e: Exception) {
+            Log.e("GoogleRegister", "Failed: ${e.message}")
+        }
+    }
     // state popup
     var showSuccess by remember { mutableStateOf(false) }
 
@@ -272,7 +287,10 @@ fun RegisterScreen(
 
                 // Login via Google
                 OutlinedButton(
-                    onClick = onGoogleLogin,
+                    onClick = {
+                        val client = GoogleAuthHelper.getClient(activity)
+                        googleLauncher.launch(client.signInIntent)
+                    },
                     modifier = Modifier.fillMaxWidth().height(50.dp),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.outlinedButtonColors(
@@ -317,6 +335,11 @@ fun RegisterScreen(
         // POPUP
         if (showSuccess) {
             SuccessfulPopup()
+        }
+        LaunchedEffect(authState) {
+            if (authState is AuthState.Success) {
+                onRegisterSuccess()
+            }
         }
     }
 }

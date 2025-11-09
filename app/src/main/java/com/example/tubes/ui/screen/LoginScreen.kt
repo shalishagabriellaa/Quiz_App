@@ -1,6 +1,10 @@
 package com.example.tubes.ui.screen
 
 // 🔹 Import Compose dan Material3
+import android.app.Activity
+import android.util.Log
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -25,23 +29,45 @@ import androidx.compose.ui.unit.sp
 import com.example.tubes.R
 import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.ui.platform.LocalContext
+import androidx.navigation.NavController
+import com.example.tubes.auth.GoogleAuthHelper
+import com.example.tubes.viewmodel.AuthViewModel
+import com.example.tubes.viewmodel.AuthState
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.common.api.ApiException
 
-@Preview(
-    showBackground = true,
-    showSystemUi = true,
-    name = "Login Screen Preview"
-)
 @Composable
 fun LoginScreen(
+    navController: NavController,
+    viewModel: AuthViewModel,
     onForgotPassword: () -> Unit = {},
     onLogin: (String, String) -> Unit = { _, _ -> },
     onSignUp: () -> Unit = {},
-    onGoogleLogin: () -> Unit = {},
-    onBack: () -> Unit = {}            // ⬅️ tambah ini untuk panah back
+    onBack: () -> Unit = {},
+    onLoginSuccess: () -> Unit = {}
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) } // ⚠️ cukup satu, jangan duplikasi
+    val authState by viewModel.authState.collectAsState()
+    val context = LocalContext.current
+    val activity = context as Activity
+
+    val googleLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+        try {
+            val account = task.getResult(ApiException::class.java)
+            val idToken = account.idToken
+            if (idToken != null) {
+                viewModel.loginWithGoogle(idToken)
+            }
+        } catch (e: Exception) {
+            Log.e("GoogleLogin", "Failed: ${e.message}")
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -244,7 +270,9 @@ fun LoginScreen(
             Spacer(modifier = Modifier.height(20.dp))
 
             OutlinedButton(
-                onClick = { onGoogleLogin() },
+                onClick = {
+                    val client = GoogleAuthHelper.getClient(activity)
+                    googleLauncher.launch(client.signInIntent) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp),
@@ -286,6 +314,11 @@ fun LoginScreen(
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.clickable { onSignUp() }
                 )
+            }
+            LaunchedEffect(authState) {
+                if (authState is AuthState.Success) {
+                    onLoginSuccess()
+                }
             }
         }
     }
