@@ -9,7 +9,7 @@ import com.example.tubes.ui.screen.SplashScreen
 import com.example.tubes.ui.screen.LoginScreen
 import com.example.tubes.ui.screen.RegisterScreen
 import com.example.tubes.ui.screen.home.HomeScreen
-import com.example.tubes.ui.screen.JoinQuizScreen
+import com.example.tubes.ui.screen.CategoryScreen
 
 import com.example.tubes.ui.theme.TubesTheme
 
@@ -26,7 +26,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             MaterialTheme {
                 Surface(color = Color.White) {
-                    AppNavigation()
+                    CategoryScreen() // ← diganti ke screen yang kamu mau
                 }
             }
         }

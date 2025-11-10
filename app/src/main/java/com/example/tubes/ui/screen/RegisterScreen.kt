@@ -315,9 +315,9 @@ fun RegisterScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(text = "Already have an account?", color = Color.White, textAlign = TextAlign.Center)
-                    Spacer(Modifier.width(6.dp))
+                    Spacer(Modifier.width(1.dp))
                     TextButton(onClick = onSignInClick) {
-                        Text("Sign In")
+                        Text("Sign In", color = Color(0xFF4A90E2), fontWeight = FontWeight.Bold)
                     }
                 }
             }

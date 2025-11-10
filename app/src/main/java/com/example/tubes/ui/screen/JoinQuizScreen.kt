@@ -254,10 +254,13 @@ private fun RowScope.TabPill(
     onClick: () -> Unit
 ) {
     val shape = RoundedCornerShape(24.dp)
-    val fillColor = if (selected && !outlined) Purple else Color.White.copy(alpha = 0.4f)
-    val textColor = if (selected && !outlined) Color.White else Color(0xFF333A7A)
-    val borderWidth = if (outlined || !selected) 1.5.dp else 0.dp
-    val borderColor = if (outlined) BorderLavender else Color.Transparent
+    val fillColor = if (selected) Purple else Color.White.copy(alpha = 0.4f)
+    val textColor = if (selected) Color.White else Color(0xFF333A7A)
+
+    // ✅ Jika selected DAN outlined = true (Scan QR) → border tetap 1.5dp
+    // ✅ Jika selected DAN outlined = false (Enter PIN) → border hilang
+    val borderWidth = if (selected && !outlined) 0.dp else 1.5.dp
+    val borderColor = if (selected && !outlined) Color.Transparent else BorderLavender
 
     Box(
         modifier = Modifier
