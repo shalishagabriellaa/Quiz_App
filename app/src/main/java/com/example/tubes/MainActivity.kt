@@ -26,14 +26,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             MaterialTheme {
                 Surface(color = Color.White) {
-                    // Tampilkan Join Quiz di emulator
-                    JoinQuizScreen(
-                        onBack = { finish() },
-                        onJoin = { pin ->
-                            // TODO: validasi / navigate
-                            // For now, biarkan kosong agar fokus UI
-                        }
-                    )
+                    AppNavigation()
                 }
             }
         }

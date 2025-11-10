@@ -13,9 +13,12 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
 import com.example.tubes.R
+import com.example.tubes.viewmodel.AuthViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import com.example.tubes.Screen
 
 data class SplashFrame(
     val image: Int,
@@ -23,7 +26,7 @@ data class SplashFrame(
 )
 
 @Composable
-fun SplashScreen(onNavigateToLogin: () -> Unit) {
+fun SplashScreen(navController: NavController, viewModel: AuthViewModel) {
     // Daftar frame dengan durasi masing-masing
     val frames = remember {
         listOf(
@@ -51,20 +54,17 @@ fun SplashScreen(onNavigateToLogin: () -> Unit) {
     val currentAlpha = remember { Animatable(1f) }
     val nextAlpha = remember { Animatable(0f) }
 
-    val fadeDuration = 700 // Durasi crossfade smooth
+    val fadeDuration = 700
 
     LaunchedEffect(Unit) {
+        viewModel.forceLogout()
         while (currentFrameIndex < frames.size - 1) {
             val currentFrame = frames[currentFrameIndex]
 
-            // Tampilkan frame current
             currentAlpha.snapTo(1f)
             nextAlpha.snapTo(0f)
 
-            // Tunggu durasi frame
             delay(currentFrame.duration)
-
-            // Mulai crossfade ke frame berikutnya
             launch {
                 currentAlpha.animateTo(
                     targetValue = 0f,
@@ -84,6 +84,7 @@ fun SplashScreen(onNavigateToLogin: () -> Unit) {
                 )
             }
 
+
             // Tunggu crossfade selesai
             delay(fadeDuration.toLong())
 
@@ -93,7 +94,9 @@ fun SplashScreen(onNavigateToLogin: () -> Unit) {
 
         // Frame terakhir
         delay(frames.last().duration)
-        onNavigateToLogin()
+        navController.navigate("login_screen") {
+            popUpTo(0)
+        }
     }
 
     Box(
@@ -124,10 +127,4 @@ fun SplashScreen(onNavigateToLogin: () -> Unit) {
             )
         }
     }
-}
-
-@Preview(showSystemUi = true, showBackground = true)
-@Composable
-fun PreviewSplashScreen() {
-    SplashScreen(onNavigateToLogin = {})
 }
