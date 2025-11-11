@@ -13,6 +13,7 @@ import com.example.tubes.ui.screen.CategoryScreen
 import com.example.tubes.ui.screen.CategorySpecifyScreen
 import com.example.tubes.ui.screen.TestInformationScreen
 import com.example.tubes.ui.screen.QuizScreen
+import com.example.tubes.ui.screen.AnswerExplanationScreen
 
 import com.example.tubes.ui.theme.TubesTheme
 
@@ -29,7 +30,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             MaterialTheme {
                 Surface(color = Color.White) {
-                    QuizScreen() // ← diganti ke screen yang kamu mau
+                    AnswerExplanationScreen() // ← diganti ke screen yang kamu mau
                 }
             }
         }

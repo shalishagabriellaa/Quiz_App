@@ -29,6 +29,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 
 // Data Models
 data class Question(
@@ -334,10 +336,14 @@ fun QuestionCard(
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
+        // ✅ Tambahkan scroll state
+        val scrollState = rememberScrollState()
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(24.dp)
+                .verticalScroll(scrollState) // <-- ini bikin konten di dalam card bisa di-scroll
         ) {
             // Category
             Text(
