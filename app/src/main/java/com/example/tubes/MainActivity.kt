@@ -11,6 +11,7 @@ import com.example.tubes.ui.screen.RegisterScreen
 import com.example.tubes.ui.screen.home.HomeScreen
 import com.example.tubes.ui.screen.CategoryScreen
 import com.example.tubes.ui.screen.CategorySpecifyScreen
+import com.example.tubes.ui.screen.TestInformationScreen
 
 import com.example.tubes.ui.theme.TubesTheme
 
@@ -27,7 +28,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             MaterialTheme {
                 Surface(color = Color.White) {
-                    CategorySpecifyScreen() // ← diganti ke screen yang kamu mau
+                    TestInformationScreen() // ← diganti ke screen yang kamu mau
                 }
             }
         }
