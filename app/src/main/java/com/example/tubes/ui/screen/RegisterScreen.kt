@@ -6,6 +6,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -38,27 +39,28 @@ import com.example.tubes.viewmodel.AuthState
 import com.example.tubes.viewmodel.AuthViewModel
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.common.api.ApiException
-
 @Composable
 fun RegisterScreen(
     viewModel: AuthViewModel,
-    navController: NavController,
-    onCreateAccount: (String, String, String) -> Unit,
-    onSignInClick: () -> Unit,
-    onNavigateAfterSuccess: () -> Unit,
-    onRegisterSuccess: () -> Unit,
-
-    ) {
+    onNavigateLogin: () -> Unit,
+    onRegisterSuccess: () -> Unit
+) {
     var fullName by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
-    val context = LocalContext.current
-    val activity = context as Activity
+
+    var showSuccess by remember { mutableStateOf(false) }
+
     val authState by viewModel.authState.collectAsState()
+
     var passwordVisible by remember { mutableStateOf(false) }
     var confirmPasswordVisible by remember { mutableStateOf(false) }
 
+    val context = LocalContext.current
+    val activity = context as Activity
+
+    // GOOGLE LAUNCHER
     val googleLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -67,27 +69,26 @@ fun RegisterScreen(
             val account = task.getResult(ApiException::class.java)
             val idToken = account.idToken
             if (idToken != null) {
-                viewModel.loginWithGoogle(idToken) // Google register/login auto handled
+                viewModel.loginWithGoogle(idToken)
             }
         } catch (e: Exception) {
             Log.e("GoogleRegister", "Failed: ${e.message}")
         }
     }
-    // state popup
-    var showSuccess by remember { mutableStateOf(false) }
 
-    // Saat popup ON, auto lanjut setelah delay (simulasi proses)
-    LaunchedEffect(showSuccess) {
-        if (showSuccess) {
-            delay(1800) // ganti sesuai durasi prosesmu
-            onNavigateAfterSuccess()
-            showSuccess = false
+    // === HANDLE REGISTER SUCCESS ===
+    LaunchedEffect(authState) {
+        if (authState is AuthState.Success) {
+            showSuccess = true          // tampilkan popup
+            delay(1200)                // tunggu animasi popup
+            onRegisterSuccess()        // navigate ke MainScreen
+            viewModel.resetState()     // reset supaya tidak navigate ulang
         }
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
 
-        // ===== LAYER KONTEN YANG DIBLUR KETIKA POPUP MUNCUL =====
+        // BLUR CONTENT ketika popup muncul
         Box(
             modifier = Modifier
                 .matchParentSize()
@@ -96,8 +97,8 @@ fun RegisterScreen(
             Image(
                 painter = painterResource(id = R.drawable.background),
                 contentDescription = "Background",
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
             )
 
             Column(
@@ -107,8 +108,6 @@ fun RegisterScreen(
                     .padding(horizontal = 24.dp, vertical = 140.dp),
                 horizontalAlignment = Alignment.Start
             ) {
-                Spacer(Modifier.height(20.dp))
-
                 Text(
                     text = "Create your Account",
                     style = MaterialTheme.typography.headlineMedium.copy(
@@ -124,7 +123,7 @@ fun RegisterScreen(
 
                 Spacer(Modifier.height(24.dp))
 
-                // Full Name
+                // NAME
                 OutlinedTextField(
                     value = fullName,
                     onValueChange = { fullName = it },
@@ -143,16 +142,13 @@ fun RegisterScreen(
                         focusedContainerColor = Color.White,
                         unfocusedContainerColor = Color.White,
                         focusedBorderColor = Color.Transparent,
-                        unfocusedBorderColor = Color.Transparent,
-                        cursorColor = Color.Black,
-                        focusedTextColor = Color.Black,
-                        unfocusedTextColor = Color.Black
+                        unfocusedBorderColor = Color.Transparent
                     )
                 )
 
                 Spacer(Modifier.height(12.dp))
 
-                // Email
+                // EMAIL
                 OutlinedTextField(
                     value = email,
                     onValueChange = { email = it },
@@ -172,16 +168,13 @@ fun RegisterScreen(
                         focusedContainerColor = Color.White,
                         unfocusedContainerColor = Color.White,
                         focusedBorderColor = Color.Transparent,
-                        unfocusedBorderColor = Color.Transparent,
-                        cursorColor = Color.Black,
-                        focusedTextColor = Color.Black,
-                        unfocusedTextColor = Color.Black
+                        unfocusedBorderColor = Color.Transparent
                     )
                 )
 
                 Spacer(Modifier.height(12.dp))
 
-                // Password
+                // PASSWORD
                 OutlinedTextField(
                     value = password,
                     onValueChange = { password = it },
@@ -212,16 +205,13 @@ fun RegisterScreen(
                         focusedContainerColor = Color.White,
                         unfocusedContainerColor = Color.White,
                         focusedBorderColor = Color.Transparent,
-                        unfocusedBorderColor = Color.Transparent,
-                        cursorColor = Color.Black,
-                        focusedTextColor = Color.Black,
-                        unfocusedTextColor = Color.Black
+                        unfocusedBorderColor = Color.Transparent
                     )
                 )
 
                 Spacer(Modifier.height(12.dp))
 
-                // Confirm Password
+                // CONFIRM PASSWORD
                 OutlinedTextField(
                     value = confirmPassword,
                     onValueChange = { confirmPassword = it },
@@ -252,20 +242,21 @@ fun RegisterScreen(
                         focusedContainerColor = Color.White,
                         unfocusedContainerColor = Color.White,
                         focusedBorderColor = Color.Transparent,
-                        unfocusedBorderColor = Color.Transparent,
-                        cursorColor = Color.Black,
-                        focusedTextColor = Color.Black,
-                        unfocusedTextColor = Color.Black
+                        unfocusedBorderColor = Color.Transparent
                     )
                 )
 
                 Spacer(Modifier.height(24.dp))
 
-                // Button Create Account
+                // CREATE ACCOUNT BUTTON
                 Button(
                     onClick = {
-                        onCreateAccount(fullName, email, password)
-                        showSuccess = true
+                        viewModel.registerUser(
+                            fullName = fullName,
+                            email = email,
+                            password = password,
+                            confirm = confirmPassword
+                        )
                     },
                     modifier = Modifier.fillMaxWidth().height(52.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2563EB)),
@@ -276,54 +267,42 @@ fun RegisterScreen(
 
                 Spacer(Modifier.height(16.dp))
 
-                // Divider "Or"
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                    Divider(modifier = Modifier.weight(1f), color = Color.White)
-                    Text("  Or  ", color = Color.White)
-                    Divider(modifier = Modifier.weight(1f), color = Color.White)
-                }
-
-                Spacer(Modifier.height(16.dp))
-
-                // Login via Google
+                // Google button
                 OutlinedButton(
                     onClick = {
                         val client = GoogleAuthHelper.getClient(activity)
                         googleLauncher.launch(client.signInIntent)
                     },
                     modifier = Modifier.fillMaxWidth().height(50.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        containerColor = Color.White,
-                        contentColor = Color.Gray
-                    ),
+                    shape = RoundedCornerShape(12.dp)
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_google),
-                        contentDescription = "Google",
-                        tint = Color.Unspecified
+                        contentDescription = null
                     )
                     Spacer(Modifier.width(8.dp))
-                    Text("Continue with Google", color = Color.Black, fontWeight = FontWeight.Bold)
+                    Text("Continue with Google")
                 }
 
                 Spacer(Modifier.height(24.dp))
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
+                    horizontalArrangement = Arrangement.Center
                 ) {
-                    Text(text = "Already have an account?", color = Color.White, textAlign = TextAlign.Center)
-                    Spacer(Modifier.width(1.dp))
-                    TextButton(onClick = onSignInClick) {
-                        Text("Sign In", color = Color(0xFF4A90E2), fontWeight = FontWeight.Bold)
-                    }
+                    Text(text = "Already have an account?", color = Color.White)
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        text = "Sign In",
+                        color = Color(0xFF4A90E2),
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.clickable { onNavigateLogin() }
+                    )
                 }
             }
         }
 
-        // Scrim gelap di belakang popup
+        // SCRIM
         if (showSuccess) {
             Box(
                 modifier = Modifier
@@ -336,10 +315,6 @@ fun RegisterScreen(
         if (showSuccess) {
             SuccessfulPopup()
         }
-        LaunchedEffect(authState) {
-            if (authState is AuthState.Success) {
-                onRegisterSuccess()
-            }
-        }
     }
 }
+
