@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -40,24 +41,39 @@ fun HomeSection(
             .fillMaxWidth()
             .padding(horizontal = 20.dp)
     ) {
-        /* ---------- Category ---------- */
+/* ---------- Category ---------- */
         SectionHeader("Category")
         Spacer(Modifier.height(12.dp))
         LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             items(categories) { item ->
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Box(
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.width(64.dp) // Beri lebar agar teks tidak "lari"
+                ) {
+                    // --- MULAI PERUBAHAN ---
+                    coil.compose.AsyncImage(
+                        model = item.bannerUrl,
+                        contentDescription = "Category: ${item.name}",
+                        contentScale = ContentScale.Crop, // Agar gambar memenuhi lingkaran
                         modifier = Modifier
                             .size(64.dp)
                             .clip(CircleShape)
                             .border(2.dp, Color.Black, CircleShape)
-                            .background(Color(0x33FFFFFF))
+                            .background(Color(0x33FFFFFF)) // Warna fallback
                     )
+                    // --- AKHIR PERUBAHAN ---
                     Spacer(Modifier.height(6.dp))
-                    Text(item.name, color = Color.Black, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(
+                        text = item.name,
+                        color = Color.Black,
+                        fontSize = 12.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 }
             }
         }
+
 
         Spacer(Modifier.height(22.dp))
 
@@ -117,19 +133,35 @@ fun HomeSection(
         Spacer(Modifier.height(12.dp))
         LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             items(topAuthors) { author ->
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Box(
-                        Modifier
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    // Tambahkan modifier agar lebar kolom konsisten
+                    modifier = Modifier.width(60.dp)
+                ) {
+                    // --- MULAI PERUBAHAN ---
+                    coil.compose.AsyncImage(
+                        model = author.avatarUrl,
+                        contentDescription = "Avatar for ${author.fullName}",
+                        contentScale = ContentScale.Crop, // Agar gambar memenuhi lingkaran
+                        modifier = Modifier
                             .size(58.dp)
-                            .clip(CircleShape)
-                            .background(Color(0x33FFFFFF))
+                            .clip(CircleShape) // Bentuk menjadi lingkaran
                             .border(2.dp, Color.Black, CircleShape)
+                            .background(Color(0x33FFFFFF)) // Warna fallback jika gambar gagal dimuat
                     )
+                    // --- AKHIR PERUBAHAN ---
                     Spacer(Modifier.height(6.dp))
-                    Text(author.name, color = Color.Black, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(
+                        author.fullName,
+                        color = Color.Black,
+                        fontSize = 12.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 }
             }
         }
+
 
         Spacer(Modifier.height(24.dp))
 
@@ -173,13 +205,35 @@ private fun QuizLargeCard(q: QuizUi) {
             .clip(RoundedCornerShape(16.dp))
             .background(Color.White)
     ) {
+
+        // === Banner ▼
         Box(
             modifier = Modifier
                 .height(130.dp)
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
-                .background(Color(0xFFB8B8FF))
         ) {
+
+            if (q.bannerUrl.isNullOrEmpty()) {
+
+                // Fallback warna asli
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color(0xFFB8B8FF))
+                )
+
+            } else {
+                // Load dari Cloudinary pakai Coil
+                coil.compose.AsyncImage(
+                    model = q.bannerUrl,
+                    contentScale = ContentScale.Crop,
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+
+            // Badge jumlah soal
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
@@ -188,10 +242,18 @@ private fun QuizLargeCard(q: QuizUi) {
                     .background(Color(0xFF5D57C1))
                     .padding(horizontal = 8.dp, vertical = 4.dp)
             ) {
-                Text("${q.questions} Qs", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                Text(
+                    "${q.questionsCount} Qs",
+                    color = Color.White,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
             }
         }
+
         Spacer(Modifier.height(12.dp))
+
+        // Judul
         Text(
             q.title,
             color = Color(0xFF1E1E1E),
@@ -200,7 +262,10 @@ private fun QuizLargeCard(q: QuizUi) {
             modifier = Modifier.padding(horizontal = 12.dp),
             maxLines = 2
         )
+
         Spacer(Modifier.height(10.dp))
+
+        // Author
         Row(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
@@ -212,7 +277,7 @@ private fun QuizLargeCard(q: QuizUi) {
                     .background(Color(0xFFB2B8FF))
             )
             Spacer(Modifier.width(8.dp))
-            Text(q.author, color = Color(0xFF6F7393), fontSize = 12.sp)
+            Text(q.authorName, color = Color(0xFF6F7393), fontSize = 12.sp)
         }
     }
 }
@@ -244,7 +309,7 @@ private fun YourQuizRow(q: QuizUi) {
                 Spacer(Modifier.width(10.dp))
                 Column(Modifier.weight(1f)) {
                     Text(q.title, color = Color(0xFF1E1E1E), fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-                    Text("${q.questions} Questions", color = Color(0xFF7B7F9F), fontSize = 12.sp)
+                    Text("${q.questionsCount} Questions", color = Color(0xFF7B7F9F), fontSize = 12.sp)
                 }
                 Spacer(Modifier.width(8.dp))
                 Text("Result", color = Color(0xFF6D6ADB), fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
@@ -270,16 +335,24 @@ private fun YourQuizRow(q: QuizUi) {
 }
 
 /* ====== Preview ====== */
-@Preview(showBackground = true, backgroundColor = 0xFF121142, widthDp = 378, heightDp = 1330)
-@Composable
-fun HomeSectionPreview() {
-    MaterialTheme {
-        HomeSection(
-            categories = listOf(CategoryUi("Technology"), CategoryUi("Music"), CategoryUi("Design")),
-            trending = listOf(QuizUi("Machine Learning Practice Test", "Wan Guntar Alam", 5)),
-            topAuthors = listOf(AuthorUi("Hannah"), AuthorUi("Nurul"), AuthorUi("Gaby")),
-            topPicks = listOf(QuizUi("Neural Network Basics", "Guntur", 4)),
-            yourQuizzes = listOf(QuizUi("Intro Kotlin", "Jet Brainly", 6))
-        )
-    }
-}
+//@Preview(showBackground = true, backgroundColor = 0xFF121142, widthDp = 378, heightDp = 1330)
+//@Composable
+//fun HomeSectionPreview() {
+//    MaterialTheme {
+//        HomeSection(
+//            categories = listOf(
+//                CategoryUi("Technology"),
+//                CategoryUi("Music"),
+//                CategoryUi("Design")
+//            ),
+//            trending = listOf(
+//                QuizUi("Machine Learning Practice Test", "Wan Guntar Alam", 5)
+//            ),
+//            topAuthors = listOf(
+//                AuthorUi("Hannah"), AuthorUi("Nurul"), AuthorUi("Gaby")
+//            ),
+//            topPicks = listOf(QuizUi("Neural Network Basics", "Guntur", 4)),
+//            yourQuizzes = listOf(QuizUi("Intro Kotlin", "Jet Brainly", 6))
+//        )
+//    }
+//}
