@@ -21,12 +21,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.tubes.R
@@ -40,11 +38,13 @@ import com.example.tubes.ui.screen.home.models.QuizUi
  * ======================= */
 @Composable
 fun HomeScreen(
-    categories: List<String> = emptyList(),
+    categories: List<CategoryUi> = emptyList(),
     trending: List<QuizUi> = emptyList(),
     topPicks: List<QuizUi> = emptyList(),
+    topAuthors: List<AuthorUi> = emptyList(),
     yourQuizzes: List<QuizUi> = emptyList(),
-    userName: String = "Gresia",
+    userName: String? = "Error di homescreen",
+    avatarUrl: String? = null,
     onHome: () -> Unit = {},
     onQuizzes: () -> Unit = {},
     onQR: () -> Unit = {},
@@ -70,7 +70,7 @@ fun HomeScreen(
             contentPadding = PaddingValues(bottom = 120.dp) // ruang bottom bar
         ) {
             // Topbar (punya wave image sendiri)
-            item { HomeTopBar(userName = userName) }
+            item { HomeTopBar(userName = userName, avatarUrl = avatarUrl) }
 
             // Sedikit jarak agar terasa blend halus (tweak bila perlu)
             item { Spacer(Modifier.height(12.dp)) }
@@ -78,18 +78,10 @@ fun HomeScreen(
             // Isi section (semua list di dalamnya bisa horizontal scroll)
             item {
                 HomeSection(
-                    categories = categories.map { CategoryUi(it) },
-                    trending = trending.ifEmpty {
-                        listOf(
-                            QuizUi("Machine Learning Practice Test", "Wan Guntar Alam", 5),
-                            QuizUi("Understanding Neural Networks", "Guntur", 3)
-                        )
-                    },
-                    topAuthors = listOf(
-                        AuthorUi("Hannah"), AuthorUi("Brian"),
-                        AuthorUi("Nurul"), AuthorUi("Gaby"), AuthorUi("Hana")
-                    ),
-                    topPicks = if (topPicks.isEmpty()) trending else topPicks,
+                    categories = categories,
+                    trending = trending,
+                    topAuthors = topAuthors, // nanti isi
+                    topPicks = topPicks,
                     yourQuizzes = if (yourQuizzes.isEmpty()) trending else yourQuizzes
                 )
             }
@@ -222,7 +214,6 @@ private fun BarItem(
             .clickable { onClick() }
     ) {
         if (selected) {
-            // ikon di lingkaran emas + ring biru (match mockup)
             Box(
                 modifier = Modifier
                     .size(40.dp)
@@ -250,22 +241,30 @@ private fun BarItem(
 /* =======================
  *   PREVIEW
  * ======================= */
-@Preview(showBackground = true, backgroundColor = 0xFF121142, widthDp = 402, heightDp = 1723)
-@Composable
-fun PreviewHomeScreen() {
-    HomeScreen(
-        categories = listOf("Technology", "Technology", "Technology", "Music", "Music"),
-        trending = listOf(
-            QuizUi("Machine Learning Practice Test", "Wan Guntar Alam", 3),
-            QuizUi("Machine Learning Practice Test", "Wan Guntar Alam", 3)
-        ),
-        topPicks = listOf(
-            QuizUi("Machine Learning Practice Test", "Wan Guntar Alam", 3),
-            QuizUi("Machine Learning Practice Test", "Wan Guntar Alam", 3)
-        ),
-        yourQuizzes = listOf(
-            QuizUi("Machine Learning Practice Test", "Wan Guntar Alam", 3),
-            QuizUi("Machine Learning Practice Test", "Wan Guntar Alam", 3)
-        )
-    )
-}
+//@Preview(showBackground = true, backgroundColor = 0xFF121142, widthDp = 402, heightDp = 1723)
+//@Composable
+//fun PreviewHomeScreen() {
+//    HomeScreen(
+//        categories = listOf(
+//            CategoryUi("Technology"),
+//            CategoryUi("Music"),
+//            CategoryUi("Design")
+//        ),
+//        trending = listOf(
+//            QuizUi("Machine Learning Practice Test", "Wan Guntar Alam", 5),
+//            QuizUi( 3, "Understanding Neural Networks", "Guntur")
+//        ),
+//        topPicks = listOf(
+//            QuizUi(3, "Deep Learning Essentials", "Alam")
+//        ),
+//        topAuthors = listOf(
+//            AuthorUi("Hannah"),
+//            AuthorUi("Brian")
+//        ),
+//        yourQuizzes = listOf(
+//            QuizUi("1", "Intro Kotlin", "Jet")
+//        ),
+//        userName = "Preview User"
+//    )
+//}
+//

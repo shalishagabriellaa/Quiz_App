@@ -44,7 +44,6 @@ data class Author(
     val avatarUrl: String
 )
 
-// Dummy data
 object QuizDummyData {
     val quizzes = listOf(
         Quiz(

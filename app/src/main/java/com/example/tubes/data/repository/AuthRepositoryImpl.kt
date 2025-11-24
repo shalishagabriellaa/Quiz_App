@@ -10,23 +10,24 @@ class AuthRepositoryImpl : AuthRepository {
     private val auth = FirebaseAuth.getInstance()
     private val firestore = FirebaseFirestore.getInstance()
 
-    override suspend fun register(
-        fullName: String,
-        email: String,
-        password: String
-    ): String {
+    override suspend fun register(fullName: String, email: String, password: String): String {
 
-        // Firebase create account -> MUST await
         val result = auth.createUserWithEmailAndPassword(email, password).await()
         val uid = result.user?.uid ?: throw Exception("Register failed: UID null")
 
+        val now = com.google.firebase.Timestamp.now()
+
         val data = mapOf(
+            "uid" to uid,
             "fullName" to fullName,
             "email" to email,
-            "uid" to uid
+            "photoUrl" to "", // kosong dulu
+            "role" to "user",
+            "totalScore" to 0,
+            "createdAt" to now,
+            "updatedAt" to now
         )
 
-        // save to Firestore -> MUST await
         firestore.collection("users")
             .document(uid)
             .set(data)
