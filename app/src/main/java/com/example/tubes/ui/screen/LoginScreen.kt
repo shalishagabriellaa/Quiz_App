@@ -109,7 +109,7 @@ fun LoginScreen(
             Spacer(modifier = Modifier.height(32.dp))
 
             Text(
-                text = "Sign in to your \n\nAccount",
+                text = "Sign in to your Account",
                 color = Color.White,
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Bold

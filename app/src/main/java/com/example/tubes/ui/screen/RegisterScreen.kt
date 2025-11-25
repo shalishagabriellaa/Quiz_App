@@ -39,6 +39,9 @@ import com.example.tubes.viewmodel.AuthState
 import com.example.tubes.viewmodel.AuthViewModel
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.common.api.ApiException
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+
 @Composable
 fun RegisterScreen(
     viewModel: AuthViewModel,
@@ -105,9 +108,22 @@ fun RegisterScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 24.dp, vertical = 140.dp),
+                    .padding(24.dp),
                 horizontalAlignment = Alignment.Start
             ) {
+                IconButton(
+                    onClick = { onNavigateLogin() },
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ArrowBack,
+                        contentDescription = "Back to Login",
+                        tint = Color.White
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(32.dp))
+
                 Text(
                     text = "Create your Account",
                     style = MaterialTheme.typography.headlineMedium.copy(
@@ -115,12 +131,13 @@ fun RegisterScreen(
                         fontWeight = FontWeight.Bold
                     )
                 )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
                 Text(
                     text = "Fill in your information to get started",
                     color = Color.LightGray,
-                    fontSize = 14.sp
-                )
-
+                    fontSize = 14.sp )
                 Spacer(Modifier.height(24.dp))
 
                 // NAME
@@ -274,7 +291,11 @@ fun RegisterScreen(
                         googleLauncher.launch(client.signInIntent)
                     },
                     modifier = Modifier.fillMaxWidth().height(50.dp),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        containerColor = Color.White,
+                        contentColor = Color.Black
+                    )
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_google),
@@ -317,4 +338,3 @@ fun RegisterScreen(
         }
     }
 }
-
