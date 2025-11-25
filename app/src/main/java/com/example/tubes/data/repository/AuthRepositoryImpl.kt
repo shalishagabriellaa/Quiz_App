@@ -2,72 +2,70 @@ package com.example.tubes.data.repository
 
 import com.example.tubes.domain.repository.AuthRepository
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
 
-class AuthRepositoryImpl : AuthRepository {
+class AuthRepositoryImpl(
+    private val auth: FirebaseAuth = FirebaseAuth.getInstance(),
+    private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
+) : AuthRepository {
 
-    private val auth = FirebaseAuth.getInstance()
-    private val firestore = FirebaseFirestore.getInstance()
+    override fun getCurrentUserId(): String? = auth.currentUser?.uid
 
-    override suspend fun register(fullName: String, email: String, password: String): String {
+    override suspend fun login(email: String, password: String): String {
+        auth.signInWithEmailAndPassword(email, password).await()
+        return auth.currentUser?.uid
+            ?: throw IllegalStateException("User ID not found after login")
+    }
 
-        val result = auth.createUserWithEmailAndPassword(email, password).await()
-        val uid = result.user?.uid ?: throw Exception("Register failed: UID null")
+    override suspend fun register(
+        fullName: String,
+        email: String,
+        password: String
+    ): String {
+        auth.createUserWithEmailAndPassword(email, password).await()
+        val uid = auth.currentUser?.uid
+            ?: throw IllegalStateException("User ID not found after register")
 
-        val now = com.google.firebase.Timestamp.now()
-
-        val data = mapOf(
+        // Simpan profil user di Firestore
+        val userData = mapOf(
             "uid" to uid,
             "fullName" to fullName,
             "email" to email,
-            "photoUrl" to "", // kosong dulu
-            "role" to "user",
-            "totalScore" to 0,
-            "createdAt" to now,
-            "updatedAt" to now
+            "avatarUrl" to null
         )
 
-        firestore.collection("users")
-            .document(uid)
-            .set(data)
-            .await()
+        db.collection("users").document(uid).set(userData).await()
+        return uid
+    }
+
+    override suspend fun loginWithGoogle(idToken: String): String {
+        val credential = GoogleAuthProvider.getCredential(idToken, null)
+
+        val result = auth.signInWithCredential(credential).await()
+        val user = result.user ?: throw IllegalStateException("User null setelah Google login")
+
+        val uid = user.uid
+
+        // cek apakah sudah ada dokumen user
+        val docRef = db.collection("users").document(uid)
+        val snapshot = docRef.get().await()
+
+        if (!snapshot.exists()) {
+            val data = mapOf(
+                "uid" to uid,
+                "fullName" to (user.displayName ?: ""),
+                "email" to (user.email ?: ""),
+                "avatarUrl" to (user.photoUrl?.toString() ?: "")
+            )
+            docRef.set(data).await()
+        }
 
         return uid
     }
 
-    override suspend fun login(email: String, password: String): String {
-        val result = auth.signInWithEmailAndPassword(email, password).await()
-        return result.user?.uid ?: throw Exception("Login failed: UID null")
-    }
-
-    override fun getCurrentUserId(): String? = auth.currentUser?.uid
-
     override fun logout() {
         auth.signOut()
-    }
-
-    override suspend fun loginWithGoogle(idToken: String): String {
-        try {
-
-            val credential = com.google.firebase.auth.GoogleAuthProvider.getCredential(idToken, null)
-            val result = auth.signInWithCredential(credential).await()
-            val uid = result.user?.uid ?: throw Exception("UID null")
-            val userDoc = firestore.collection("users").document(uid).get().await()
-
-            if (!userDoc.exists()) {
-                val data = mapOf(
-                    "uid" to uid,
-                    "email" to (result.user?.email ?: ""),
-                    "name" to (result.user?.displayName ?: "")
-                )
-                firestore.collection("users").document(uid).set(data).await()
-            }
-
-            return uid
-
-        } catch (e: Exception) {
-            throw Exception("Google Login failed: ${e.message}")
-        }
     }
 }

@@ -1,5 +1,6 @@
 package com.example.tubes.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.tubes.domain.repository.AuthRepository
@@ -76,14 +77,15 @@ class AuthViewModel(
     }
 
     fun loginWithGoogle(idToken: String) {
-        _authState.value = AuthState.Loading
-
         viewModelScope.launch {
+            _authState.value = AuthState.Loading
             try {
                 val uid = repository.loginWithGoogle(idToken)
+                Log.d("AuthViewModel", "Google login success, UID: $uid")
                 _authState.value = AuthState.Success(uid)
             } catch (e: Exception) {
-                _authState.value = AuthState.Error(e.message ?: "Login Google gagal")
+                Log.e("AuthViewModel", "Google login error: ${e.message}")
+                _authState.value = AuthState.Error(e.message ?: "Google login failed")
             }
         }
     }

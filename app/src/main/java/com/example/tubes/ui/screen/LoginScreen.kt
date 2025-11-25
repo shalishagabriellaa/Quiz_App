@@ -1,6 +1,5 @@
 package com.example.tubes.ui.screen
 
-// 🔹 Import Compose dan Material3
 import android.app.Activity
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -22,15 +21,11 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.tubes.R
-import androidx.compose.foundation.hoverable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavController
+import com.example.tubes.R
 import com.example.tubes.auth.GoogleAuthHelper
 import com.example.tubes.viewmodel.AuthViewModel
 import com.example.tubes.viewmodel.AuthState
@@ -42,17 +37,19 @@ fun LoginScreen(
     viewModel: AuthViewModel,
     onNavigateRegister: () -> Unit,
     onLoginSuccess: () -> Unit,
-    onForgotPassword: () -> Unit = {}
+    onForgotPassword: () -> Unit = {},
+    onBack: () -> Unit = {}
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
+    var rememberMe by remember { mutableStateOf(false) }
 
     val authState by viewModel.authState.collectAsState()
     val context = LocalContext.current
     val activity = context as Activity
 
-    // ===== GOOGLE LOGIN LAUNCHER =====
+    // GOOGLE LOGIN LAUNCHER
     val googleLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -67,17 +64,22 @@ fun LoginScreen(
             Log.e("GoogleLogin", "Failed: ${e.message}")
         }
     }
+
     LaunchedEffect(authState) {
+        Log.d("LoginScreen", "AuthState changed: $authState")
         if (authState is AuthState.Success) {
+            Log.d("LoginScreen", "Login success, navigating...")
             onLoginSuccess()
-            viewModel.resetState()
+            // JANGAN langsung reset di sini, biarkan setelah navigasi selesai
         }
     }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFF0A083A))
     ) {
+
         Image(
             painter = painterResource(id = R.drawable.background),
             contentDescription = "Background",
@@ -89,13 +91,25 @@ fun LoginScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(24.dp),
-            horizontalAlignment = Alignment.Start,
-            verticalArrangement = Arrangement.Center
+            horizontalAlignment = Alignment.Start
         ) {
 
-            // TITLE
+            // BACK BUTTON
+            IconButton(
+                onClick = onBack,
+                modifier = Modifier.size(32.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.ArrowBack,
+                    contentDescription = "Back",
+                    tint = Color.White
+                )
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
+
             Text(
-                text = "Sign in to your\nAccount",
+                text = "Sign in to your \n\nAccount",
                 color = Color.White,
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Bold
@@ -104,8 +118,8 @@ fun LoginScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "Enter your email and password to sign in",
-                color = Color.White,
+                text = "Enter your email and password to log in",
+                color = Color(0xFFE0E0E0),
                 fontSize = 14.sp
             )
 
@@ -154,8 +168,7 @@ fun LoginScreen(
                     IconButton(onClick = { passwordVisible = !passwordVisible }) {
                         Icon(
                             painter = painterResource(
-                                id = if (passwordVisible) R.drawable.ic_eye_open
-                                else R.drawable.ic_eye_closed
+                                id = if (passwordVisible) R.drawable.ic_eye_open else R.drawable.ic_eye_closed
                             ),
                             contentDescription = null,
                             tint = Color.Gray
@@ -174,14 +187,31 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // FORGOT PASSWORD
+            // REMEMBER ME + FORGOT PASSWORD
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End
+                verticalAlignment = Alignment.CenterVertically
             ) {
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Checkbox(
+                        checked = rememberMe,
+                        onCheckedChange = { rememberMe = it },
+                        colors = CheckboxDefaults.colors(
+                            checkedColor = Color(0xFF2563EB),
+                            uncheckedColor = Color.White
+                        )
+                    )
+                    Text("Remember me", color = Color.White, fontSize = 14.sp)
+                }
+
                 Text(
                     text = "Forgot Password ?",
                     color = Color(0xFF4A90E2),
+                    fontSize = 14.sp,
                     modifier = Modifier.clickable { onForgotPassword() }
                 )
             }
@@ -202,17 +232,13 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // DIVIDER
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Divider(
-                    color = Color.White,
-                    modifier = Modifier.weight(1f)
-                )
-                Text("  Or  ", color = Color.White)
-                Divider(
-                    color = Color.White,
-                    modifier = Modifier.weight(1f)
-                )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Divider(color = Color(0xFFCCCCCC), modifier = Modifier.weight(1f))
+                Text(" Or ", color = Color.White, fontSize = 14.sp)
+                Divider(color = Color(0xFFCCCCCC), modifier = Modifier.weight(1f))
             }
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -229,19 +255,20 @@ fun LoginScreen(
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.outlinedButtonColors(
                     containerColor = Color.White,
-                    contentColor = Color.Gray
-                ),
+                    contentColor = Color.Black
+                )
             ) {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_google),
                     contentDescription = null
                 )
                 Spacer(Modifier.width(8.dp))
-                Text("Continue with Google", color = Color.Black)
+                Text("Continue with Google")
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
+            // SIGN UP TEXT
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center
@@ -266,4 +293,3 @@ fun LoginScreen(
         }
     }
 }
-

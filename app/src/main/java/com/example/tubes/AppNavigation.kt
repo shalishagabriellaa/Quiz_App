@@ -54,39 +54,40 @@ fun AppNavigation() {
 
     NavHost(
         navController = navController,
-        startDestination = Screen.SplashScreen.route
+        startDestination = Screen.LoginScreen.route
         ) {
 
-        composable(Screen.SplashScreen.route) {
+//        composable(Screen.SplashScreen.route) {
+//
+//            val authState by authViewModel.authState.collectAsState()
+//            var animationDone by remember {mutableStateOf(false)}
+//
+//            LaunchedEffect(animationDone, authState) {
+//                if(animationDone) {
+//                    when(authState) {
+//                        is AuthState.Success -> {
+//                            val uid = (authState as AuthState.Success).userId
+//                            Log.d("UID Akan Dikirim", uid)
+//                            navController.navigate(Screen.MainScreen.route) {
+//                                popUpTo(0)
+//                            }
+//                        }
+//                        else -> {
+//                            navController.navigate(Screen.LoginScreen.route) {
+//                                popUpTo(0)
+//                            }
+//                        }
+//                    }
+//                }
+//            }
+//
+//            SplashScreen(
+//                onAnimationFinished = {
+//                    animationDone = true
+//                }
+//            )
+//        }
 
-            val authState by authViewModel.authState.collectAsState()
-            var animationDone by remember {mutableStateOf(false)}
-
-            LaunchedEffect(animationDone, authState) {
-                if(animationDone) {
-                    when(authState) {
-                        is AuthState.Success -> {
-                            val uid = (authState as AuthState.Success).userId
-                            Log.d("UID Akan Dikirim", uid)
-                            navController.navigate(Screen.MainScreen.route) {
-                                popUpTo(0)
-                            }
-                        }
-                        else -> {
-                            navController.navigate(Screen.LoginScreen.route) {
-                                popUpTo(0)
-                            }
-                        }
-                    }
-                }
-            }
-
-            SplashScreen(
-                onAnimationFinished = {
-                    animationDone = true
-                }
-            )
-        }
         composable(Screen.LoginScreen.route) {
             LoginScreen(
                 viewModel = authViewModel,
@@ -95,6 +96,7 @@ fun AppNavigation() {
                     navController.navigate(Screen.MainScreen.route) {
                         popUpTo(Screen.LoginScreen.route) { inclusive = true }
                     }
+
                 }
             )
         }
