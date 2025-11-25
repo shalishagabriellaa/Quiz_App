@@ -38,10 +38,15 @@ class HomeRepositoryImpl : HomeRepository {
     }
 
     override suspend fun getCategories(): List<Category> {
-        return db.collection("categories")
+        val snapshot = db.collection("categories")
             .get()
             .await()
-            .toObjects(Category::class.java)
+
+        return snapshot.documents.map { doc ->
+            val category = doc.toObject(Category::class.java) ?: Category()
+            // MASUKKAN doc.id ke field id
+            category.copy(id = doc.id)
+        }
     }
 
     override suspend fun getTrendingQuizzes(): List<Quiz> {
@@ -76,6 +81,18 @@ class HomeRepositoryImpl : HomeRepository {
         } catch (e: Exception) {
             Log.e("HomeRepository", "findQuizIdByCode EXCEPTION", e)
             null
+        }
+    }
+
+    override suspend fun getQuizzesByCategory(categoryId: String): List<Quiz> {
+        val snapshot = db.collection("quizzes")
+            .whereEqualTo("categoryId", categoryId)  // NAMANYA HARUS PERSIS
+            .get()
+            .await()
+
+        return snapshot.documents.map { doc ->
+            val quiz = doc.toObject(Quiz::class.java) ?: Quiz()
+            quiz.copy(id = doc.id)
         }
     }
 

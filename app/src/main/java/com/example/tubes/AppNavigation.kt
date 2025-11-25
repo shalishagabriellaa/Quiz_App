@@ -99,6 +99,35 @@ fun AppNavigation() {
             QuizScreen(quizId = quizId)
         }
 
+        // LIST CATEGORY
+        composable("category") {
+            val state by homeViewModel.uiState.collectAsState()
+
+            CategoryScreen(
+                categories = state.categoriesUi,
+                onBackClick = { navController.popBackStack() },
+                onCategoryClick = { categoryUi ->
+                    // kirim id & name
+                    navController.navigate("categorySpecify/${categoryUi.id}/${categoryUi.name}")
+                }
+            )
+        }
+
+// CATEGORY SPECIFY
+        composable("categorySpecify/{categoryId}/{categoryName}") { backStackEntry ->
+            val categoryId = backStackEntry.arguments?.getString("categoryId") ?: ""
+            val categoryName = backStackEntry.arguments?.getString("categoryName") ?: ""
+
+            CategorySpecifyScreen(
+                categoryId = categoryId,
+                categoryName = categoryName,
+                onBackClick = { navController.popBackStack() },
+                onQuizClick = { quizId ->
+                    // TODO: navController.navigate("quiz/$quizId")
+                }
+            )
+        }
+
         // ========== MAIN / HOME ==========
         composable("main") {
             val authState by authViewModel.authState.collectAsState()
@@ -143,10 +172,21 @@ fun AppNavigation() {
                             Log.d("HomeScreen", "Navigate ke quiz/$quizId")
                             navController.navigate("quiz/$quizId")
                         }
+                    },
+
+                    onCategorySeeAll = {
+                        navController.navigate("category")
+                    },
+
+                    onCategoryClick = { categoryUi ->
+                        navController.navigate(
+                            "categorySpecify/${categoryUi.id}/${categoryUi.name}"
+                        )
                     }
+
                 )
             }
 
-    }
+        }
     }
 }

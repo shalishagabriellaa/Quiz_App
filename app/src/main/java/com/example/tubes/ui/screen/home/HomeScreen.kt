@@ -51,7 +51,9 @@ fun HomeScreen(
     onLeaderboard: () -> Unit = {},
     onProfile: () -> Unit = {},
     onSettings: () -> Unit = {},
-    onSearchQuizCode: (String) -> Unit = {}
+    onSearchQuizCode: (String) -> Unit = {},
+    onCategorySeeAll: () -> Unit = {},
+    onCategoryClick: (CategoryUi) -> Unit = {}
 ) {
     // state tab untuk bottom bar (tanpa navigation dulu)
     var selectedTab by remember { mutableStateOf(BottomTab.Home) }
@@ -92,7 +94,9 @@ fun HomeScreen(
                     trending = trending,
                     topAuthors = topAuthors, // nanti isi
                     topPicks = topPicks,
-                    yourQuizzes = if (yourQuizzes.isEmpty()) trending else yourQuizzes
+                    yourQuizzes = if (yourQuizzes.isEmpty()) trending else yourQuizzes,
+                    onCategorySeeAll = onCategorySeeAll,
+                    onCategoryClick = onCategoryClick
                 )
             }
 

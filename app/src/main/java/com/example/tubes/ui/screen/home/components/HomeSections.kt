@@ -2,6 +2,7 @@ package com.example.tubes.ui.screen.home
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -34,7 +35,9 @@ fun HomeSection(
     topAuthors: List<AuthorUi>,
     topPicks: List<QuizUi>,
     yourQuizzes: List<QuizUi>,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onCategorySeeAll: () -> Unit = {},
+    onCategoryClick: (CategoryUi) -> Unit = {}
 ) {
     Column(
         modifier = modifier
@@ -42,7 +45,10 @@ fun HomeSection(
             .padding(horizontal = 20.dp)
     ) {
 /* ---------- Category ---------- */
-        SectionHeader("Category")
+        SectionHeader(
+            "Category",
+            onSeeAll = onCategorySeeAll
+        )
         Spacer(Modifier.height(12.dp))
         LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             items(categories) { item ->
@@ -54,12 +60,13 @@ fun HomeSection(
                     coil.compose.AsyncImage(
                         model = item.bannerUrl,
                         contentDescription = "Category: ${item.name}",
-                        contentScale = ContentScale.Crop, // Agar gambar memenuhi lingkaran
+                        contentScale = ContentScale.Crop,
                         modifier = Modifier
                             .size(64.dp)
                             .clip(CircleShape)
                             .border(2.dp, Color.Black, CircleShape)
-                            .background(Color(0x33FFFFFF)) // Warna fallback
+                            .background(Color(0x33FFFFFF))
+                            .clickable { onCategoryClick(item) }
                     )
                     // --- AKHIR PERUBAHAN ---
                     Spacer(Modifier.height(6.dp))
@@ -186,14 +193,37 @@ fun HomeSection(
 /* ====== Sub-UI ====== */
 
 @Composable
-private fun SectionHeader(title: String) {
+private fun SectionHeader(
+    title: String,
+    onSeeAll: (() -> Unit)? = null
+) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(title, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.Black)
-        Text("See all", color = Color.Blue, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+        Text(
+            title,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.Black
+        )
+
+        Text(
+            "See all",
+            color = Color(0xFF212252),
+            fontSize = 12.sp,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier
+                .let { m ->
+                    if (onSeeAll != null) {
+                        m
+                            .clip(RoundedCornerShape(8.dp))
+                            .clickable { onSeeAll() }
+                            .padding(4.dp)
+                    } else m
+                }
+        )
     }
 }
 

@@ -17,4 +17,3 @@ data class Quiz(
     val updatedAt: Timestamp? = null
 
 )
-

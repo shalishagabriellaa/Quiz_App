@@ -10,4 +10,6 @@ interface HomeRepository {
     suspend fun getTrendingQuizzes(): List<Quiz>
     suspend fun getTopAuthors(): List<User>
     suspend fun findQuizIdByCode(quizCode: String): String?
+    suspend fun getQuizzesByCategory(categoryId: String): List<Quiz>
+
 }
