@@ -333,26 +333,3 @@ private fun YourQuizRow(q: QuizUi) {
         }
     }
 }
-
-/* ====== Preview ====== */
-//@Preview(showBackground = true, backgroundColor = 0xFF121142, widthDp = 378, heightDp = 1330)
-//@Composable
-//fun HomeSectionPreview() {
-//    MaterialTheme {
-//        HomeSection(
-//            categories = listOf(
-//                CategoryUi("Technology"),
-//                CategoryUi("Music"),
-//                CategoryUi("Design")
-//            ),
-//            trending = listOf(
-//                QuizUi("Machine Learning Practice Test", "Wan Guntar Alam", 5)
-//            ),
-//            topAuthors = listOf(
-//                AuthorUi("Hannah"), AuthorUi("Nurul"), AuthorUi("Gaby")
-//            ),
-//            topPicks = listOf(QuizUi("Neural Network Basics", "Guntur", 4)),
-//            yourQuizzes = listOf(QuizUi("Intro Kotlin", "Jet Brainly", 6))
-//        )
-//    }
-//}

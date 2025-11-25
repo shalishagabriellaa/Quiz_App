@@ -6,7 +6,8 @@ import com.google.firebase.firestore.ServerTimestamp
 
 data class User(
     val uid: String = "",
-    val fullName: String = "",
+    val name: String? = null,
+    val fullName: String? = null,
     val email: String = "",
     val avatarUrl: String? = null,
     val role: String = "user",

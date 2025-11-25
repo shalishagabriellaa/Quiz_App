@@ -23,7 +23,7 @@ fun Category.toUi(): CategoryUi {
 
 fun User.toAuthorUi(): AuthorUi {
     return AuthorUi(
-        fullName = this.fullName,
+        fullName = this.fullName ?: this.name ?: "Unknown",
         avatarUrl = this.avatarUrl
     )
 }

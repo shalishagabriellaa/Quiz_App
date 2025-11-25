@@ -43,13 +43,15 @@ fun HomeScreen(
     topPicks: List<QuizUi> = emptyList(),
     topAuthors: List<AuthorUi> = emptyList(),
     yourQuizzes: List<QuizUi> = emptyList(),
-    userName: String? = "Error di homescreen",
+    userName: String? = "Homescreen Error",
     avatarUrl: String? = null,
     onHome: () -> Unit = {},
     onQuizzes: () -> Unit = {},
     onQR: () -> Unit = {},
     onLeaderboard: () -> Unit = {},
-    onProfile: () -> Unit = {}
+    onProfile: () -> Unit = {},
+    onSettings: () -> Unit = {},
+    onSearchQuizCode: (String) -> Unit = {}
 ) {
     // state tab untuk bottom bar (tanpa navigation dulu)
     var selectedTab by remember { mutableStateOf(BottomTab.Home) }
@@ -70,7 +72,15 @@ fun HomeScreen(
             contentPadding = PaddingValues(bottom = 120.dp) // ruang bottom bar
         ) {
             // Topbar (punya wave image sendiri)
-            item { HomeTopBar(userName = userName, avatarUrl = avatarUrl) }
+            item {
+                HomeTopBar(
+                    userName = userName,
+                    avatarUrl = avatarUrl,
+                    onSettings = onSettings,
+                    onAvatarClick = onProfile,
+                    onSearch = onSearchQuizCode
+                )
+            }
 
             // Sedikit jarak agar terasa blend halus (tweak bila perlu)
             item { Spacer(Modifier.height(12.dp)) }
@@ -237,34 +247,3 @@ private fun BarItem(
         )
     }
 }
-
-/* =======================
- *   PREVIEW
- * ======================= */
-//@Preview(showBackground = true, backgroundColor = 0xFF121142, widthDp = 402, heightDp = 1723)
-//@Composable
-//fun PreviewHomeScreen() {
-//    HomeScreen(
-//        categories = listOf(
-//            CategoryUi("Technology"),
-//            CategoryUi("Music"),
-//            CategoryUi("Design")
-//        ),
-//        trending = listOf(
-//            QuizUi("Machine Learning Practice Test", "Wan Guntar Alam", 5),
-//            QuizUi( 3, "Understanding Neural Networks", "Guntur")
-//        ),
-//        topPicks = listOf(
-//            QuizUi(3, "Deep Learning Essentials", "Alam")
-//        ),
-//        topAuthors = listOf(
-//            AuthorUi("Hannah"),
-//            AuthorUi("Brian")
-//        ),
-//        yourQuizzes = listOf(
-//            QuizUi("1", "Intro Kotlin", "Jet")
-//        ),
-//        userName = "Preview User"
-//    )
-//}
-//

@@ -3,8 +3,6 @@ package com.example.tubes.viewmodel
 import androidx.lifecycle.ViewModel
 import android.util.Log
 import androidx.lifecycle.viewModelScope
-import com.example.tubes.data.model.Category
-import com.example.tubes.data.model.Quiz
 import com.example.tubes.data.model.User
 import com.example.tubes.domain.repository.HomeRepository
 import com.example.tubes.ui.screen.home.models.CategoryUi
@@ -26,21 +24,19 @@ class HomeViewModel(
             try {
                 _uiState.value = _uiState.value.copy(isLoading = true)
                 Log.d("HomeVM", "Fetching UID: $uid")
+
                 val user = repo.getUser(uid)
                 val categories = repo.getCategories()
                 val categoriesUi = categories.map { it.toUi() }
                 val topAuthors = repo.getTopAuthors()
-
-                // ===== Trending Quizzes =====
                 val trending = repo.getTrendingQuizzes()
 
                 val authorCache = mutableMapOf<String, String>()
-
                 trending.forEach { quiz ->
                     val authorId = quiz.authorId
                     if (authorId.isNotEmpty() && !authorCache.containsKey(authorId)) {
                         val authorUser = repo.getUser(authorId)
-                        authorCache[authorId] = authorUser?.fullName ?: "Unknown"
+                        authorCache[authorId] = authorUser?.fullName ?: authorUser?.name ?: "Unknown"
                     }
                 }
 
@@ -48,19 +44,56 @@ class HomeViewModel(
                     quiz.toUi(authorName = authorCache[quiz.authorId] ?: "Unknown")
                 }
 
+                // 🔹 Ambil nama dari fullName dulu, kalau null pakai name, kalau null lagi pakai email
+                val displayName = user?.fullName
+                    ?: user?.name
+                    ?: user?.email?.substringBefore("@")
+                    ?: "Guest"
+
                 _uiState.value = HomeUiState(
                     isLoading = false,
                     error = null,
-                    userName = user?.fullName ?: "Unknown Name",
+                    userName = displayName,
                     categoriesUi = categoriesUi,
                     trendingUi = trendingUi,
                     topAuthors = topAuthors,
-                    avatarUrl = user?.avatarUrl ?: null
+                    avatarUrl = user?.avatarUrl
                 )
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     error = e.message ?: "Unknown error"
+                )
+            }
+        }
+    }
+
+    // 🔹 DIPAKAI OLEH HomeTopBar (search quiz code)
+    fun searchQuizByCode(
+        code: String,
+        onFound: (String) -> Unit
+    ) {
+        viewModelScope.launch {
+            if (code.isBlank()) {
+                _uiState.value = _uiState.value.copy(
+                    searchError = "Quiz code can't be empty"
+                )
+                return@launch
+            }
+
+            try {
+                val quizId = repo.findQuizIdByCode(code)
+                if (quizId != null) {
+                    _uiState.value = _uiState.value.copy(searchError = null)
+                    onFound(quizId) // kasih ke UI untuk navigate
+                } else {
+                    _uiState.value = _uiState.value.copy(
+                        searchError = "Can't find the quiz by the code given"
+                    )
+                }
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    searchError = "Error"
                 )
             }
         }
@@ -74,8 +107,6 @@ data class HomeUiState(
     val trendingUi: List<QuizUi> = emptyList(),
     val topAuthors: List<User> = emptyList(),
     val isLoading: Boolean = true,
-    val error: String? = null
+    val error: String? = null,
+    val searchError: String? = null
 )
-
-
-

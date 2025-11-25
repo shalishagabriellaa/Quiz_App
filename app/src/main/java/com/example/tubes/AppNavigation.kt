@@ -8,9 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.ViewModel
@@ -19,7 +17,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.tubes.Screen
 import com.example.tubes.data.repository.AuthRepositoryImpl
 import com.example.tubes.data.repository.HomeRepositoryImpl
 import com.example.tubes.ui.screen.*
@@ -37,6 +34,7 @@ fun AppNavigation() {
     val authViewModel: AuthViewModel = viewModel(
         factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                @Suppress("UNCHECKED_CAST")
                 return AuthViewModel(authRepository) as T
             }
         }
@@ -46,48 +44,18 @@ fun AppNavigation() {
     val homeViewModel: HomeViewModel = viewModel(
         factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                @Suppress("UNCHECKED_CAST")
                 return HomeViewModel(homeRepository) as T
             }
         }
     )
 
-
     NavHost(
         navController = navController,
         startDestination = Screen.LoginScreen.route
-        ) {
+    ) {
 
-//        composable(Screen.SplashScreen.route) {
-//
-//            val authState by authViewModel.authState.collectAsState()
-//            var animationDone by remember {mutableStateOf(false)}
-//
-//            LaunchedEffect(animationDone, authState) {
-//                if(animationDone) {
-//                    when(authState) {
-//                        is AuthState.Success -> {
-//                            val uid = (authState as AuthState.Success).userId
-//                            Log.d("UID Akan Dikirim", uid)
-//                            navController.navigate(Screen.MainScreen.route) {
-//                                popUpTo(0)
-//                            }
-//                        }
-//                        else -> {
-//                            navController.navigate(Screen.LoginScreen.route) {
-//                                popUpTo(0)
-//                            }
-//                        }
-//                    }
-//                }
-//            }
-//
-//            SplashScreen(
-//                onAnimationFinished = {
-//                    animationDone = true
-//                }
-//            )
-//        }
-
+        // ========== LOGIN ==========
         composable(Screen.LoginScreen.route) {
             LoginScreen(
                 viewModel = authViewModel,
@@ -96,10 +64,11 @@ fun AppNavigation() {
                     navController.navigate(Screen.MainScreen.route) {
                         popUpTo(Screen.LoginScreen.route) { inclusive = true }
                     }
-
                 }
             )
         }
+
+        // ========== REGISTER ==========
         composable(Screen.RegisterScreen.route) {
             RegisterScreen(
                 viewModel = authViewModel,
@@ -114,49 +83,70 @@ fun AppNavigation() {
             )
         }
 
-// File: AppNavigation.kt
+        // ========== SETTINGS ==========
+        composable(Screen.SettingScreen.route) {
+            SettingScreen()
+        }
 
-        composable(Screen.MainScreen.route) {
-            // Dapatkan authState untuk mendapatkan UID
+        // ========== PROFILE ==========
+        composable(Screen.ProfileScreen.route) {
+            ProfileScreen()
+        }
+
+        // ========== QUIZ (BY CODE) ==========
+        composable(Screen.QuizScreen.route + "/{quizId}") { backStackEntry ->
+            val quizId = backStackEntry.arguments?.getString("quizId") ?: ""
+            QuizScreen(quizId = quizId)
+        }
+
+        // ========== MAIN / HOME ==========
+        composable("main") {
             val authState by authViewModel.authState.collectAsState()
             val state by homeViewModel.uiState.collectAsState()
 
-            // Gunakan LaunchedEffect untuk memuat data saat layar ini pertama kali masuk komposisi
             LaunchedEffect(authState) {
-                // Pastikan kita punya UID sebelum mencoba memuat data
                 if (authState is AuthState.Success) {
                     val uid = (authState as AuthState.Success).userId
                     Log.d("HomeScreen", "Memicu loadHome dengan UID: $uid")
                     homeViewModel.loadHome(uid)
                 } else {
-                    // Opsional: Handle jika tiba-tiba user tidak login, mungkin navigasi kembali ke login
                     Log.w("HomeScreen", "Tidak dapat memuat data, user tidak terautentikasi.")
                 }
             }
 
-            // Tampilkan loading indicator jika isLoading true
             if (state.isLoading) {
-                // Ganti dengan komponen loading screen Anda yang lebih baik
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
                     CircularProgressIndicator()
                 }
             } else {
-                // Tampilkan HomeScreen hanya jika loading selesai
                 HomeScreen(
                     categories = state.categoriesUi,
                     trending = state.trendingUi,
-                    topPicks = emptyList(), // Ganti dengan data dari state jika sudah ada
-                    yourQuizzes = emptyList(), // Ganti dengan data dari state jika sudah ada
+                    topPicks = emptyList(),
+                    yourQuizzes = emptyList(),
                     topAuthors = state.topAuthors.map { it.toAuthorUi() },
                     userName = state.userName,
                     avatarUrl = state.avatarUrl,
-                    onHome = {},
-                    onQuizzes = {},
-                    onQR = {},
-                    onLeaderboard = {},
-                    onProfile = {}
+                    onHome = { },
+                    onQuizzes = { },
+                    onQR = { },
+                    onLeaderboard = { },
+                    onProfile = { navController.navigate("profile") },
+                    onSettings = { navController.navigate("settings") },
+
+                    // 🔹 ini yg bikin tombol Search bisa navigate
+                    onSearchQuizCode = { code ->
+                        homeViewModel.searchQuizByCode(code) { quizId ->
+                            Log.d("HomeScreen", "Navigate ke quiz/$quizId")
+                            navController.navigate("quiz/$quizId")
+                        }
+                    }
                 )
             }
-        }
+
+    }
     }
 }

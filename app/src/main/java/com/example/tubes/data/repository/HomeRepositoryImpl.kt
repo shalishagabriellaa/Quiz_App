@@ -60,4 +60,23 @@ class HomeRepositoryImpl : HomeRepository {
             .await()
             .toObjects(User::class.java)
     }
+
+    override suspend fun findQuizIdByCode(quizCode: String): String? {
+        return try {
+            val snapshot = db.collection("quizzes")
+                .whereEqualTo("quizCode", quizCode) // field di Firestore
+                .limit(1)
+                .get()
+                .await()
+
+            val doc = snapshot.documents.firstOrNull()
+            val id = doc?.id
+            Log.d("HomeRepository", "findQuizIdByCode | code=$quizCode, foundId=$id")
+            id
+        } catch (e: Exception) {
+            Log.e("HomeRepository", "findQuizIdByCode EXCEPTION", e)
+            null
+        }
+    }
+
 }

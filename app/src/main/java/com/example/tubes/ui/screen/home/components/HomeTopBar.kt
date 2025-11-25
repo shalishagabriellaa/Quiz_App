@@ -48,7 +48,6 @@ fun HomeTopBar(
             .fillMaxWidth()
             .height(headerHeight)
     ) {
-        // Background image
         Image(
             painter = painterResource(id = R.drawable.topbar_bg),
             contentDescription = null,
@@ -75,12 +74,12 @@ fun HomeTopBar(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     // Settings Button
-                    Box(
+                    IconButton(
+                        onClick = onSettings,
                         modifier = Modifier
                             .size(36.dp)
                             .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.18f)),
-                        contentAlignment = Alignment.Center
+                            .background(Color.White.copy(alpha = 0.18f))
                     ) {
                         Icon(
                             imageVector = Icons.Default.Settings,
@@ -90,18 +89,14 @@ fun HomeTopBar(
                     }
 
                     // Avatar button
-                    Box(
+                    IconButton(
+                        onClick = onAvatarClick,
                         modifier = Modifier
                             .size(40.dp)
                             .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.18f)),
-                        contentAlignment = Alignment.Center
+                            .background(Color.White.copy(alpha = 0.18f))
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Person,
-                            contentDescription = "Avatar",
-                            tint = Color.White
-                        )
+                        AvatarContent(avatarUrl = avatarUrl)
                     }
                 }
 
@@ -121,7 +116,6 @@ fun HomeTopBar(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                // Search Text Input
                 Box(
                     modifier = Modifier
                         .weight(1f)
@@ -161,7 +155,7 @@ fun HomeTopBar(
 
                 Spacer(Modifier.width(8.dp))
 
-                // Search Button
+                // Search Button -> hanya cari quizCode
                 Box(
                     modifier = Modifier
                         .size(46.dp)
@@ -173,7 +167,7 @@ fun HomeTopBar(
                         ),
                     contentAlignment = Alignment.Center
                 ) {
-                    IconButton(onClick = { onSearch(query) }) {
+                    IconButton(onClick = { onSearch(query.trim()) }) {
                         Icon(
                             imageVector = Icons.Rounded.Search,
                             contentDescription = "Search",
@@ -186,23 +180,24 @@ fun HomeTopBar(
     }
 }
 
-@Preview(
-    showBackground = true,
-    backgroundColor = 0xFF121142,
-    widthDp = 402,
-    heightDp = 250
-)
 @Composable
-fun HomeTopBarPreview() {
-    HomeTopBar(userName = "Gresia")
-}
-
-@Composable
-private fun DecorDot(size: Dp, color: Color) {
-    Box(
-        modifier = Modifier
-            .size(size)
-            .clip(CircleShape)
-            .background(color.copy(alpha = 0.75f))
-    )
+private fun AvatarContent(avatarUrl: String?) {
+    // Butuh dependency di module app:
+    // implementation("io.coil-kt:coil-compose:2.7.0")
+    if (!avatarUrl.isNullOrEmpty()) {
+        coil.compose.AsyncImage(
+            model = avatarUrl,
+            contentDescription = "Avatar",
+            modifier = Modifier
+                .fillMaxSize()
+                .clip(CircleShape),
+            contentScale = ContentScale.Crop
+        )
+    } else {
+        Icon(
+            imageVector = Icons.Default.Person,
+            contentDescription = "Avatar",
+            tint = Color.White
+        )
+    }
 }

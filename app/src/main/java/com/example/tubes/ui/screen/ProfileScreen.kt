@@ -8,11 +8,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 
 @Composable
-fun QuizScreen(quizId: String) {
+fun ProfileScreen() {      // ⚠️ sama persis dengan import di AppNavigation
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
-        Text(text = "Halaman Quiz (sementara)\nID: $quizId")
+        Text(text = "Halaman Profile (sementara)")
     }
 }
