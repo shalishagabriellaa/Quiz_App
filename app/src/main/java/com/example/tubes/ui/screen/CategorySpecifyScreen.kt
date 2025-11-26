@@ -10,7 +10,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -25,12 +24,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import com.example.tubes.data.repository.HomeRepositoryImpl
 import com.example.tubes.data.model.Quiz
+import com.example.tubes.data.model.User
+import com.example.tubes.data.repository.HomeRepositoryImpl
 import com.example.tubes.ui.screen.home.models.QuizUi
 import com.example.tubes.ui.screen.home.models.toUi
-import kotlinx.coroutines.launch
 import com.example.tubes.util.formatRelativeTime
+import kotlinx.coroutines.launch
 
 @Composable
 fun CategorySpecifyScreen(
@@ -53,23 +53,31 @@ fun CategorySpecifyScreen(
                 // 1. Ambil semua quiz untuk categoryId ini
                 val quizzes: List<Quiz> = repo.getQuizzesByCategory(categoryId)
 
-                // 2. Ambil nama author untuk setiap quiz (cache biar ga bolak-balik Firestore)
-                val authorCache = mutableMapOf<String, String>()
+                // 2. Ambil USER lengkap untuk setiap quiz (supaya dapat name + avatarUrl)
+                val authorCache = mutableMapOf<String, User>()
                 quizzes.forEach { quiz ->
                     val authorId = quiz.authorId
                     if (authorId.isNotEmpty() && !authorCache.containsKey(authorId)) {
                         val user = repo.getUser(authorId)
-                        authorCache[authorId] = user?.fullName ?: user?.name ?: "Unknown"
+                        if (user != null) {
+                            authorCache[authorId] = user
+                        }
                     }
                 }
 
                 // 3. Mapping ke QuizUi
                 val quizUiList: List<QuizUi> = quizzes.map { quiz ->
-                    val authorName = authorCache[quiz.authorId] ?: "Unknown"
-                    quiz.toUi(authorName = authorName)
+                    val author = authorCache[quiz.authorId]
+                    val authorName = author?.fullName ?: author?.name ?: "Unknown"
+                    val avatarUrl = author?.avatarUrl
+
+                    quiz.toUi(
+                        authorName = authorName,
+                        authorAvatarUrl = avatarUrl
+                    )
                 }
 
-                // 4. Ambil category untuk banner (pakai daftar categories yang sudah ada di Firestore)
+                // 4. Ambil category untuk banner
                 val allCategories = repo.getCategories()
                 val thisCategory = allCategories.firstOrNull { it.id == categoryId }
 
@@ -91,7 +99,6 @@ fun CategorySpecifyScreen(
 
     Scaffold(
         topBar = {
-            // ❗ ini pakai CategoryTopBar dari CategoryScreen.kt (harus non-private)
             CategoryTopBar(
                 title = categoryName,
                 onBackClick = onBackClick,
@@ -205,7 +212,6 @@ private fun CategorySpecifyBanner(
                 modifier = Modifier.fillMaxSize()
             )
         } else {
-            // fallback gradient kalau belum ada banner di DB
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -296,11 +302,23 @@ private fun QuizCard(
                     overflow = TextOverflow.Ellipsis
                 )
 
-                Text(
-                    text = formatRelativeTime(quiz.createdAt),
-                    fontSize = 12.sp,
-                    color = Color.Gray
-                )
+                // 🔹 Baris waktu + total play
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = formatRelativeTime(quiz.createdAt),
+                        fontSize = 12.sp,
+                        color = Color.Gray
+                    )
+                    Text(
+                        text = "${quiz.attemptCount} plays",
+                        fontSize = 12.sp,
+                        color = Color.Gray
+                    )
+                }
 
                 Spacer(Modifier.height(8.dp))
 
@@ -313,7 +331,17 @@ private fun QuizCard(
                             .size(24.dp)
                             .clip(CircleShape)
                             .background(Color(0xFFE0E0E0))
-                    )
+                    ) {
+                        // 🔹 Avatar author
+                        if (!quiz.authorAvatarUrl.isNullOrEmpty()) {
+                            AsyncImage(
+                                model = quiz.authorAvatarUrl,
+                                contentDescription = quiz.authorName,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
+                    }
                     Text(
                         text = quiz.authorName,
                         fontSize = 13.sp,

@@ -31,17 +31,26 @@ class HomeViewModel(
                 val topAuthors = repo.getTopAuthors()
                 val trending = repo.getTrendingQuizzes()
 
-                val authorCache = mutableMapOf<String, String>()
+                // Cache USER lengkap (untuk name + avatar)
+                val authorCache = mutableMapOf<String, User?>()
+
                 trending.forEach { quiz ->
                     val authorId = quiz.authorId
                     if (authorId.isNotEmpty() && !authorCache.containsKey(authorId)) {
                         val authorUser = repo.getUser(authorId)
-                        authorCache[authorId] = authorUser?.fullName ?: authorUser?.name ?: "Unknown"
+                        authorCache[authorId] = authorUser
                     }
                 }
 
                 val trendingUi = trending.map { quiz ->
-                    quiz.toUi(authorName = authorCache[quiz.authorId] ?: "Unknown")
+                    val author = authorCache[quiz.authorId]
+                    val authorName = author?.fullName ?: author?.name ?: "Unknown"
+                    val avatarUrl = author?.avatarUrl
+
+                    quiz.toUi(
+                        authorName = authorName,
+                        authorAvatarUrl = avatarUrl
+                    )
                 }
 
                 // 🔹 Ambil nama dari fullName dulu, kalau null pakai name, kalau null lagi pakai email

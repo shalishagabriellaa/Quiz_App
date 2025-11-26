@@ -5,16 +5,19 @@ import com.example.tubes.data.model.Quiz
 import com.example.tubes.data.model.User
 import com.google.firebase.Timestamp
 
-fun Quiz.toUi(authorName: String): QuizUi {
-    return QuizUi(
-        id = id,
-        title = title,
-        authorName = authorName,
-        questionsCount = questionCount.toString(),
-        bannerUrl = bannerUrl,
-        createdAt = createdAt      // ✅ pastikan field ini ada di data.model.Quiz
-    )
-}
+fun Quiz.toUi(
+    authorName: String,
+    authorAvatarUrl: String?
+): QuizUi = QuizUi(
+    id = id,
+    title = title,
+    bannerUrl = bannerUrl,
+    questionsCount = questionCount,
+    createdAt = createdAt,
+    authorName = authorName,
+    authorAvatarUrl = authorAvatarUrl,
+    attemptCount = attemptCount
+)
 
 fun Category.toUi(): CategoryUi {
     return CategoryUi(

@@ -3,6 +3,7 @@ package com.example.tubes.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.tubes.data.model.Quiz
+import com.example.tubes.data.model.User
 import com.example.tubes.domain.repository.HomeRepository
 import com.example.tubes.ui.screen.home.models.QuizUi
 import com.example.tubes.ui.screen.home.models.toUi
@@ -34,22 +35,27 @@ class CategorySpecifyViewModel(
                 // 1. Ambil semua quiz kategori ini
                 val quizzes: List<Quiz> = repo.getQuizzesByCategory(categoryId)
 
-                // 2. Cache nama author
-                val authorCache = mutableMapOf<String, String>()
+                // 2. Cache USER author (supaya dapat name + avatarUrl)
+                val authorCache = mutableMapOf<String, User?>()
 
                 quizzes.forEach { quiz ->
                     val authorId = quiz.authorId
-                    if (!authorId.isNullOrEmpty() && !authorCache.containsKey(authorId)) {
+                    if (authorId.isNotEmpty() && !authorCache.containsKey(authorId)) {
                         val user = repo.getUser(authorId)
-                        authorCache[authorId] = user?.fullName ?: user?.name ?: "Unknown"
+                        authorCache[authorId] = user
                     }
                 }
 
                 // 3. Mapping ke QuizUi
                 val quizUiList: List<QuizUi> = quizzes.map { quiz ->
-                    val authorName = authorCache[quiz.authorId] ?: "Unknown"
-                    // ⬅️ panggil extension dari objek quiz
-                    quiz.toUi(authorName)
+                    val author = authorCache[quiz.authorId]
+                    val authorName = author?.fullName ?: author?.name ?: "Unknown"
+                    val avatarUrl = author?.avatarUrl
+
+                    quiz.toUi(
+                        authorName = authorName,
+                        authorAvatarUrl = avatarUrl
+                    )
                 }
 
                 _uiState.value = _uiState.value.copy(

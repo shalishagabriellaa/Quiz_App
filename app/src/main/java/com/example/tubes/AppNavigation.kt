@@ -123,7 +123,19 @@ fun AppNavigation() {
                 categoryName = categoryName,
                 onBackClick = { navController.popBackStack() },
                 onQuizClick = { quizId ->
-                    // TODO: navController.navigate("quiz/$quizId")
+                    navController.navigate("testInfo/$quizId")
+                }
+            )
+        }
+
+        // Test Information Screen
+        composable("testInfo/{quizId}") { backStackEntry ->
+            val quizId = backStackEntry.arguments?.getString("quizId") ?: ""
+            TestInformationScreen(
+                quizId = quizId,
+                onBackClick = { navController.popBackStack() },
+                onStartQuiz = {
+                    navController.navigate(Screen.QuizScreen.route + "/$quizId")
                 }
             )
         }

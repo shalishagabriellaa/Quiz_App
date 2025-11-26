@@ -13,8 +13,7 @@ class HomeRepositoryImpl : HomeRepository {
     private val db = FirebaseFirestore.getInstance()
 
     override suspend fun getUser(uid: String): User? {
-        // 1. Log sebelum memanggil Firestore
-        Log.d("HomeRepository", "Mulai getUser | Mencoba mengambil data user dari Firestore dengan UID: $uid")
+        Log.d("HomeRepository", "Mulai getUser | UID: $uid")
 
         return try {
             val documentSnapshot = db.collection("users")
@@ -24,16 +23,15 @@ class HomeRepositoryImpl : HomeRepository {
 
             if (documentSnapshot.exists()) {
                 val user = documentSnapshot.toObject(User::class.java)
-                Log.d("HomeRepository", "getUser BERHASIL | Dokumen ditemukan. Data user: ${user?.fullName}")
+                Log.d("HomeRepository", "getUser BERHASIL | ${user?.fullName}")
                 user
             } else {
-                Log.w("HomeRepository", "getUser GAGAL | Dokumen dengan UID '$uid' tidak ditemukan di collection 'users'.")
-                null // Kembalikan null karena dokumen tidak ada
+                Log.w("HomeRepository", "getUser | Dokumen '$uid' tidak ditemukan.")
+                null
             }
         } catch (e: Exception) {
-            // 3. Log jika terjadi EXCEPTION saat memanggil Firestore
-            Log.e("HomeRepository", "getUser EXCEPTION | Terjadi error saat mengambil data user.", e)
-            null // Kembalikan null karena terjadi error
+            Log.e("HomeRepository", "getUser EXCEPTION", e)
+            null
         }
     }
 
@@ -44,7 +42,6 @@ class HomeRepositoryImpl : HomeRepository {
 
         return snapshot.documents.map { doc ->
             val category = doc.toObject(Category::class.java) ?: Category()
-            // MASUKKAN doc.id ke field id
             category.copy(id = doc.id)
         }
     }
@@ -69,7 +66,7 @@ class HomeRepositoryImpl : HomeRepository {
     override suspend fun findQuizIdByCode(quizCode: String): String? {
         return try {
             val snapshot = db.collection("quizzes")
-                .whereEqualTo("quizCode", quizCode) // field di Firestore
+                .whereEqualTo("quizCode", quizCode)
                 .limit(1)
                 .get()
                 .await()
@@ -86,7 +83,7 @@ class HomeRepositoryImpl : HomeRepository {
 
     override suspend fun getQuizzesByCategory(categoryId: String): List<Quiz> {
         val snapshot = db.collection("quizzes")
-            .whereEqualTo("categoryId", categoryId)  // NAMANYA HARUS PERSIS
+            .whereEqualTo("categoryId", categoryId)
             .get()
             .await()
 
@@ -96,4 +93,16 @@ class HomeRepositoryImpl : HomeRepository {
         }
     }
 
+    // 🔹 fungsi yg dipakai TestInformationScreen
+    suspend fun getQuizById(quizId: String): Quiz {
+        val snapshot = db.collection("quizzes")
+            .document(quizId)
+            .get()
+            .await()
+
+        val quiz = snapshot.toObject(Quiz::class.java)
+            ?: throw IllegalStateException("Quiz not found")
+
+        return quiz.copy(id = snapshot.id)
+    }
 }

@@ -6,7 +6,9 @@ data class QuizUi(
     val id: String,
     val title: String,
     val authorName: String,
-    val questionsCount: String,
+    val questionsCount: Long,
     val bannerUrl: String?,
-    val createdAt: Timestamp?
+    val createdAt: Timestamp?,
+    val authorAvatarUrl: String?,
+    val attemptCount: Long
 )
