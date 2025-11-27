@@ -74,7 +74,8 @@ class QuizRepositoryImpl(
                             category = "", // akan diisi dari quiz
                             question = it.text,
                             options = it.options,
-                            correctAnswerIndex = it.answer.toAnswerIndex()
+                            correctAnswerIndex = it.answer.toAnswerIndex(),
+                            explanation = it.explanation      // ⬅️ PENTING
                         )
                     }
                 } catch (e: Exception) {

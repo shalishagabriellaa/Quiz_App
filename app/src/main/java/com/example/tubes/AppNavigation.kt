@@ -25,6 +25,8 @@ import com.example.tubes.ui.screen.home.models.toAuthorUi
 import com.example.tubes.viewmodel.AuthState
 import com.example.tubes.viewmodel.AuthViewModel
 import com.example.tubes.viewmodel.HomeViewModel
+import com.example.tubes.data.repository.QuizRepositoryImpl
+import com.example.tubes.viewmodel.QuizViewModel
 
 @Composable
 fun AppNavigation() {
@@ -51,6 +53,16 @@ fun AppNavigation() {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
                 @Suppress("UNCHECKED_CAST")
                 return HomeViewModel(homeRepository) as T
+            }
+        }
+    )
+
+    val quizRepository = remember { QuizRepositoryImpl() }
+    val quizViewModel: QuizViewModel = viewModel(
+        factory = object : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                @Suppress("UNCHECKED_CAST")
+                return QuizViewModel(quizRepository) as T
             }
         }
     )
@@ -105,12 +117,11 @@ fun AppNavigation() {
             val currentAuthState = authState
             val userId = if (currentAuthState is AuthState.Success) {
                 currentAuthState.userId
-            } else {
-                null
-            }
+            } else null
 
             QuizScreen(
                 quizId = quizId,
+                viewModel = quizViewModel,                // ⬅️ shared VM
                 onBackClick = { navController.popBackStack() },
                 onQuizComplete = { score, total ->
                     Log.d("AppNavigation", "Quiz completed: $score/$total")
@@ -127,6 +138,7 @@ fun AppNavigation() {
             val quizId = backStackEntry.arguments?.getString("quizId") ?: ""
             AnswerExplanationScreen(
                 quizId = quizId,
+                viewModel = quizViewModel,                // ⬅️ pakai VM yang sama
                 onBackClick = { navController.popBackStack() }
             )
         }

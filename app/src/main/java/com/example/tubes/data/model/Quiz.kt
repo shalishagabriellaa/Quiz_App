@@ -22,7 +22,8 @@ data class QuestionFirestore(
     val quizId: String = "",
     val text: String = "",
     val options: List<String> = emptyList(),
-    val answer: String = "" // "A. 1", "B. 2", dst
+    val answer: String = "",
+    val explanation: String = ""
 )
 
 data class QuestionUi(
@@ -31,7 +32,8 @@ data class QuestionUi(
     val question: String,
     val options: List<String>,
     val correctAnswerIndex: Int, // index 0-3 untuk A-D
-    val userAnswer: Int? = null
+    val userAnswer: Int? = null,
+    val explanation: String = ""
 )
 
 data class QuizUiState(

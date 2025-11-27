@@ -32,20 +32,12 @@ import androidx.compose.material.icons.filled.ArrowForward
 @Composable
 fun QuizScreen(
     quizId: String,
+    viewModel: QuizViewModel,
     onBackClick: () -> Unit = {},
     onQuizComplete: (score: Int, total: Int) -> Unit = { _, _ -> },
     onViewExplanation: (quizId: String) -> Unit = {},
     userId: String? = null
 ) {
-    // Create ViewModel with factory
-    val viewModel: QuizViewModel = viewModel(
-        factory = object : ViewModelProvider.Factory {
-            override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                @Suppress("UNCHECKED_CAST")
-                return QuizViewModel(QuizRepositoryImpl()) as T
-            }
-        }
-    )
 
     val uiState by viewModel.uiState.collectAsState()
 
