@@ -15,5 +15,44 @@ data class Quiz(
     val popularity: Long = 0L,           // mirip attemptCount
     val createdAt: Timestamp? = null,
     val updatedAt: Timestamp? = null
-
 )
+
+data class QuestionFirestore(
+    val questionId: String = "",
+    val quizId: String = "",
+    val text: String = "",
+    val options: List<String> = emptyList(),
+    val answer: String = "" // "A. 1", "B. 2", dst
+)
+
+data class QuestionUi(
+    val id: String,
+    val category: String,
+    val question: String,
+    val options: List<String>,
+    val correctAnswerIndex: Int, // index 0-3 untuk A-D
+    val userAnswer: Int? = null
+)
+
+data class QuizUiState(
+    val quiz: Quiz? = null,
+    val questions: List<QuestionUi> = emptyList(),
+    val currentQuestionIndex: Int = 0,
+    val timeRemaining: Int = 0,
+    val selectedAnswer: Int? = null,
+    val userAnswers: Map<Int, Int> = emptyMap(), // questionIndex -> answerIndex
+    val isLoading: Boolean = true,
+    val error: String? = null,
+    val isSubmitted: Boolean = false,
+    val score: Int = 0
+)
+
+fun String.toAnswerIndex(): Int {
+    return when {
+        this.startsWith("A.", ignoreCase = true) -> 0
+        this.startsWith("B.", ignoreCase = true) -> 1
+        this.startsWith("C.", ignoreCase = true) -> 2
+        this.startsWith("D.", ignoreCase = true) -> 3
+        else -> 0
+    }
+}

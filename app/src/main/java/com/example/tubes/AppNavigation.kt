@@ -30,6 +30,7 @@ import com.example.tubes.viewmodel.HomeViewModel
 fun AppNavigation() {
     val navController = rememberNavController()
 
+    // --- Auth ViewModel ---
     val authRepository = remember { AuthRepositoryImpl() }
     val authViewModel: AuthViewModel = viewModel(
         factory = object : ViewModelProvider.Factory {
@@ -40,6 +41,10 @@ fun AppNavigation() {
         }
     )
 
+    // Sekarang baru boleh collect authState
+    val authState by authViewModel.authState.collectAsState()
+
+    // --- Home ViewModel ---
     val homeRepository = remember { HomeRepositoryImpl() }
     val homeViewModel: HomeViewModel = viewModel(
         factory = object : ViewModelProvider.Factory {
@@ -93,13 +98,40 @@ fun AppNavigation() {
             ProfileScreen()
         }
 
-        // ========== QUIZ (BY CODE) ==========
+        // ========== QUIZ (INTEGRATED WITH FIREBASE) ==========
         composable(Screen.QuizScreen.route + "/{quizId}") { backStackEntry ->
             val quizId = backStackEntry.arguments?.getString("quizId") ?: ""
-            QuizScreen(quizId = quizId)
+
+            val currentAuthState = authState
+            val userId = if (currentAuthState is AuthState.Success) {
+                currentAuthState.userId
+            } else {
+                null
+            }
+
+            QuizScreen(
+                quizId = quizId,
+                onBackClick = { navController.popBackStack() },
+                onQuizComplete = { score, total ->
+                    Log.d("AppNavigation", "Quiz completed: $score/$total")
+                },
+                onViewExplanation = { qId ->
+                    navController.navigate("answerExplanation/$qId")
+                },
+                userId = userId
+            )
         }
 
-        // LIST CATEGORY
+        // ========== ANSWER EXPLANATION ==========
+        composable("answerExplanation/{quizId}") { backStackEntry ->
+            val quizId = backStackEntry.arguments?.getString("quizId") ?: ""
+            AnswerExplanationScreen(
+                quizId = quizId,
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
+        // ========== LIST CATEGORY ==========
         composable("category") {
             val state by homeViewModel.uiState.collectAsState()
 
@@ -107,13 +139,12 @@ fun AppNavigation() {
                 categories = state.categoriesUi,
                 onBackClick = { navController.popBackStack() },
                 onCategoryClick = { categoryUi ->
-                    // kirim id & name
                     navController.navigate("categorySpecify/${categoryUi.id}/${categoryUi.name}")
                 }
             )
         }
 
-// CATEGORY SPECIFY
+        // ========== CATEGORY SPECIFY ==========
         composable("categorySpecify/{categoryId}/{categoryName}") { backStackEntry ->
             val categoryId = backStackEntry.arguments?.getString("categoryId") ?: ""
             val categoryName = backStackEntry.arguments?.getString("categoryName") ?: ""
@@ -128,7 +159,7 @@ fun AppNavigation() {
             )
         }
 
-        // Test Information Screen
+        // ========== TEST INFORMATION SCREEN ==========
         composable("testInfo/{quizId}") { backStackEntry ->
             val quizId = backStackEntry.arguments?.getString("quizId") ?: ""
             TestInformationScreen(
@@ -142,12 +173,12 @@ fun AppNavigation() {
 
         // ========== MAIN / HOME ==========
         composable("main") {
-            val authState by authViewModel.authState.collectAsState()
+            val authStateMain by authViewModel.authState.collectAsState()
             val state by homeViewModel.uiState.collectAsState()
 
-            LaunchedEffect(authState) {
-                if (authState is AuthState.Success) {
-                    val uid = (authState as AuthState.Success).userId
+            LaunchedEffect(authStateMain) {
+                if (authStateMain is AuthState.Success) {
+                    val uid = (authStateMain as AuthState.Success).userId
                     Log.d("HomeScreen", "Memicu loadHome dengan UID: $uid")
                     homeViewModel.loadHome(uid)
                 } else {
@@ -178,7 +209,6 @@ fun AppNavigation() {
                     onProfile = { navController.navigate("profile") },
                     onSettings = { navController.navigate("settings") },
 
-                    // 🔹 ini yg bikin tombol Search bisa navigate
                     onSearchQuizCode = { code ->
                         homeViewModel.searchQuizByCode(code) { quizId ->
                             Log.d("HomeScreen", "Navigate ke quiz/$quizId")
@@ -195,10 +225,8 @@ fun AppNavigation() {
                             "categorySpecify/${categoryUi.id}/${categoryUi.name}"
                         )
                     }
-
                 )
             }
-
         }
     }
 }

@@ -1,15 +1,17 @@
 package com.example.tubes
 
-// Satu-satunya sumber kebenaran untuk semua route
 sealed class Screen(val route: String) {
-
+    object SplashScreen : Screen("splash")
     object LoginScreen : Screen("login")
     object RegisterScreen : Screen("register")
     object MainScreen : Screen("main")
-
-    object SettingScreen : Screen("settings")
+    object HomeScreen : Screen("home")
     object ProfileScreen : Screen("profile")
-
-    // Base route untuk quiz. Nanti dipakai sebagai "quiz/{quizId}"
+    object SettingScreen : Screen("settings")
+    object CategoryScreen : Screen("category")
     object QuizScreen : Screen("quiz")
+
+    // Dengan parameter
+    object CategorySpecifyScreen : Screen("categorySpecify/{categoryId}/{categoryName}")
+    object TestInformationScreen : Screen("testInfo/{quizId}")
 }
