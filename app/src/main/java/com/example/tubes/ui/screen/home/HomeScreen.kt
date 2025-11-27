@@ -38,22 +38,24 @@ import com.example.tubes.ui.screen.home.models.QuizUi
  * ======================= */
 @Composable
 fun HomeScreen(
-    categories: List<CategoryUi> = emptyList(),
-    trending: List<QuizUi> = emptyList(),
-    topPicks: List<QuizUi> = emptyList(),
-    topAuthors: List<AuthorUi> = emptyList(),
-    yourQuizzes: List<QuizUi> = emptyList(),
-    userName: String? = "Homescreen Error",
-    avatarUrl: String? = null,
-    onHome: () -> Unit = {},
-    onQuizzes: () -> Unit = {},
-    onQR: () -> Unit = {},
-    onLeaderboard: () -> Unit = {},
-    onProfile: () -> Unit = {},
-    onSettings: () -> Unit = {},
-    onSearchQuizCode: (String) -> Unit = {},
-    onCategorySeeAll: () -> Unit = {},
-    onCategoryClick: (CategoryUi) -> Unit = {}
+    categories: List<CategoryUi>,
+    trending: List<QuizUi>,
+    topPicks: List<QuizUi>,
+    yourQuizzes: List<QuizUi>,
+    topAuthors: List<AuthorUi>,
+    userName: String,
+    avatarUrl: String?,
+    onHome: () -> Unit,
+    onQuizzes: () -> Unit,
+    onQR: () -> Unit,
+    onLeaderboard: () -> Unit,
+    onProfile: () -> Unit,
+    onSettings: () -> Unit,
+    onSearchQuizCode: (String) -> Unit,
+    onCategorySeeAll: () -> Unit,
+    onCategoryClick: (CategoryUi) -> Unit,
+    onTrendingSeeAll: () -> Unit,
+    onTrendingClick: (String) -> Unit
 ) {
     // state tab untuk bottom bar (tanpa navigation dulu)
     var selectedTab by remember { mutableStateOf(BottomTab.Home) }
@@ -92,11 +94,13 @@ fun HomeScreen(
                 HomeSection(
                     categories = categories,
                     trending = trending,
-                    topAuthors = topAuthors, // nanti isi
+                    topAuthors = topAuthors,
                     topPicks = topPicks,
-                    yourQuizzes = if (yourQuizzes.isEmpty()) trending else yourQuizzes,
+                    yourQuizzes = yourQuizzes,
                     onCategorySeeAll = onCategorySeeAll,
-                    onCategoryClick = onCategoryClick
+                    onCategoryClick = onCategoryClick,
+                    onTrendingSeeAll = onTrendingSeeAll,
+                    onTrendingClick = onTrendingClick
                 )
             }
 

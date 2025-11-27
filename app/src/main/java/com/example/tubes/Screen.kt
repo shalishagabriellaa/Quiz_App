@@ -10,6 +10,7 @@ sealed class Screen(val route: String) {
     object SettingScreen : Screen("settings")
     object CategoryScreen : Screen("category")
     object QuizScreen : Screen("quiz")
+    object TrendingScreen : Screen("trending")
 
     // Dengan parameter
     object CategorySpecifyScreen : Screen("categorySpecify/{categoryId}/{categoryName}")

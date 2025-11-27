@@ -7,6 +7,7 @@ import com.example.tubes.data.model.User
 import com.example.tubes.domain.repository.HomeRepository
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
+import com.google.firebase.firestore.Query
 
 class HomeRepositoryImpl : HomeRepository {
 
@@ -46,14 +47,6 @@ class HomeRepositoryImpl : HomeRepository {
         }
     }
 
-    override suspend fun getTrendingQuizzes(): List<Quiz> {
-        return db.collection("quizzes")
-            .limit(10)
-            .get()
-            .await()
-            .toObjects(Quiz::class.java)
-    }
-
     override suspend fun getTopAuthors(): List<User> {
         return db.collection("users")
             .whereEqualTo("role", "author")
@@ -78,6 +71,24 @@ class HomeRepositoryImpl : HomeRepository {
         } catch (e: Exception) {
             Log.e("HomeRepository", "findQuizIdByCode EXCEPTION", e)
             null
+        }
+    }
+
+    override suspend fun getTrendingQuizzes(): List<Quiz> {
+        return try {
+            val snapshot = db.collection("quizzes")
+                .orderBy("attemptCount", Query.Direction.DESCENDING) // ⬅️ paling banyak dimainkan dulu
+                .limit(10)
+                .get()
+                .await()
+
+            snapshot.documents.map { doc ->
+                val quiz = doc.toObject(Quiz::class.java) ?: Quiz()
+                quiz.copy(id = doc.id) // ⬅️ penting supaya id kepakai di UI
+            }
+        } catch (e: Exception) {
+            Log.e("HomeRepository", "getTrendingQuizzes EXCEPTION", e)
+            emptyList()
         }
     }
 

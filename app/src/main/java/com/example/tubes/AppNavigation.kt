@@ -183,6 +183,19 @@ fun AppNavigation() {
             )
         }
 
+        // ========== TRENDING FULL LIST ==========
+        composable("trending") {
+            val state by homeViewModel.uiState.collectAsState()
+
+            TrendingScreen(
+                trending = state.trendingUi,
+                onBackClick = { navController.popBackStack() },
+                onQuizClick = { quizId ->
+                    navController.navigate("testInfo/$quizId")
+                }
+            )
+        }
+
         // ========== MAIN / HOME ==========
         composable("main") {
             val authStateMain by authViewModel.authState.collectAsState()
@@ -236,8 +249,17 @@ fun AppNavigation() {
                         navController.navigate(
                             "categorySpecify/${categoryUi.id}/${categoryUi.name}"
                         )
+                    },
+
+                    onTrendingSeeAll = {                          // ⬅️ TAMBAH INI
+                        navController.navigate("trending")
+                    },
+
+                    onTrendingClick = { quizId ->
+                        navController.navigate("testInfo/$quizId")
                     }
                 )
+
             }
         }
     }
