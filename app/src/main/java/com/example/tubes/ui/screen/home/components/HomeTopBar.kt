@@ -7,7 +7,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.Icon
@@ -24,30 +23,24 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.tubes.R
 
 @Composable
 fun HomeTopBar(
-    userName: String,
+    userName: String? = null,
     modifier: Modifier = Modifier,
     onSettings: () -> Unit = {},
-    onAvatarClick: () -> Unit = {},
     onSearch: (String) -> Unit = {}
 ) {
     var query by remember { mutableStateOf("") }
 
-    val headerHeight = 200.dp
-
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(headerHeight)
+            .height(200.dp)
     ) {
-        // Background image
         Image(
             painter = painterResource(id = R.drawable.topbar_bg),
             contentDescription = null,
@@ -60,67 +53,65 @@ fun HomeTopBar(
                 .fillMaxSize()
                 .padding(horizontal = 16.dp, vertical = 20.dp)
         ) {
-            // Top Row
-            Box(
+
+            // ============================================
+            // 🔥 TOP ROW (Settings - Welcome - Owl)
+            // ============================================
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(42.dp)
+                    .height(42.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .align(Alignment.CenterStart),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Settings Button
-                    Box(
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.18f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Settings,
-                            contentDescription = "Settings",
-                            tint = Color.White
-                        )
-                    }
 
-                    // Avatar button
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.18f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Person,
-                            contentDescription = "Avatar",
-                            tint = Color.White
-                        )
-                    }
+                // SETTINGS — kiri
+                IconButton(
+                    onClick = onSettings,
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(Color.White.copy(alpha = 0.18f))
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Settings,
+                        contentDescription = "Settings",
+                        tint = Color.White
+                    )
                 }
 
+                Spacer(Modifier.weight(1f))
+
+                // 🔥 Welcome text tepat DI TENGAH baris
                 Text(
-                    text = "Welcome, $userName!",
+                    text = "Welcome, ${userName ?: "Guest"}",
                     color = Color.White,
                     fontSize = 20.sp,
                     fontWeight = FontWeight.ExtraBold,
-                    modifier = Modifier.align(Alignment.Center)
+                )
+
+                Spacer(Modifier.weight(1f))
+
+                // OWL ICON — kanan
+                Image(
+                    painter = painterResource(id = R.drawable.ic_owl),
+                    contentDescription = "Avatar",
+                    modifier = Modifier
+                        .size(36.dp),
+                    contentScale = ContentScale.Fit
                 )
             }
 
             Spacer(Modifier.height(20.dp))
 
-            // Search Row
+            // ============================================
+            // SEARCH BAR
+            // ============================================
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                // Search Text Input
+
                 Box(
                     modifier = Modifier
                         .weight(1f)
@@ -137,6 +128,7 @@ fun HomeTopBar(
                         .padding(start = 16.dp, end = 64.dp),
                     contentAlignment = Alignment.CenterStart
                 ) {
+
                     BasicTextField(
                         value = query,
                         onValueChange = { query = it },
@@ -160,7 +152,6 @@ fun HomeTopBar(
 
                 Spacer(Modifier.width(8.dp))
 
-                // Search Button
                 Box(
                     modifier = Modifier
                         .size(46.dp)
@@ -172,7 +163,7 @@ fun HomeTopBar(
                         ),
                     contentAlignment = Alignment.Center
                 ) {
-                    IconButton(onClick = { onSearch(query) }) {
+                    IconButton(onClick = { onSearch(query.trim()) }) {
                         Icon(
                             imageVector = Icons.Rounded.Search,
                             contentDescription = "Search",
@@ -183,25 +174,4 @@ fun HomeTopBar(
             }
         }
     }
-}
-
-@Preview(
-    showBackground = true,
-    backgroundColor = 0xFF121142,
-    widthDp = 402,
-    heightDp = 250
-)
-@Composable
-fun HomeTopBarPreview() {
-    HomeTopBar(userName = "Gresia")
-}
-
-@Composable
-private fun DecorDot(size: Dp, color: Color) {
-    Box(
-        modifier = Modifier
-            .size(size)
-            .clip(CircleShape)
-            .background(color.copy(alpha = 0.75f))
-    )
 }

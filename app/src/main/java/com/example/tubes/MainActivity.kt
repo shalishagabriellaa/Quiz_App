@@ -11,6 +11,11 @@ import com.example.tubes.ui.screen.RegisterScreen
 import com.example.tubes.ui.screen.home.HomeScreen
 import com.example.tubes.ui.screen.CategoryScreen
 import com.example.tubes.ui.screen.CategorySpecifyScreen
+import com.example.tubes.ui.screen.TestInformationScreen
+import com.example.tubes.ui.screen.QuizScreen
+import com.example.tubes.ui.screen.AnswerExplanationScreen
+import com.example.tubes.AppNavigation
+import com.example.tubes.TeacherAppNavigation
 
 import com.example.tubes.ui.theme.TubesTheme
 
@@ -21,6 +26,7 @@ import androidx.compose.ui.graphics.Color
 import com.example.tubes.ui.screen.profile.ProfileScreen
 import com.example.tubes.ui.screen.setting.SettingScreen
 
+import com.example.tubes.data.cloudinary.CloudinaryManager
 import com.google.firebase.FirebaseApp
 import com.google.firebase.firestore.FirebaseFirestore
 
@@ -35,4 +41,3 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-}

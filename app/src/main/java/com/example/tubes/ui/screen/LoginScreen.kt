@@ -1,6 +1,5 @@
 package com.example.tubes.ui.screen
 
-// 🔹 Import Compose dan Material3
 import android.app.Activity
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -22,15 +21,11 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.tubes.R
-import androidx.compose.foundation.hoverable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavController
+import com.example.tubes.R
 import com.example.tubes.auth.GoogleAuthHelper
 import com.example.tubes.viewmodel.AuthViewModel
 import com.example.tubes.viewmodel.AuthState
@@ -39,21 +34,22 @@ import com.google.android.gms.common.api.ApiException
 
 @Composable
 fun LoginScreen(
-    navController: NavController,
     viewModel: AuthViewModel,
+    onNavigateRegister: () -> Unit,
+    onLoginSuccess: () -> Unit,
     onForgotPassword: () -> Unit = {},
-    onLogin: (String, String) -> Unit = { _, _ -> },
-    onSignUp: () -> Unit = {},
-    onBack: () -> Unit = {},
-    onLoginSuccess: () -> Unit = {}
+    onBack: () -> Unit = {}
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var passwordVisible by remember { mutableStateOf(false) } // ⚠️ cukup satu, jangan duplikasi
+    var passwordVisible by remember { mutableStateOf(false) }
+    var rememberMe by remember { mutableStateOf(false) }
+
     val authState by viewModel.authState.collectAsState()
     val context = LocalContext.current
     val activity = context as Activity
 
+    // GOOGLE LOGIN LAUNCHER
     val googleLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -69,11 +65,21 @@ fun LoginScreen(
         }
     }
 
+    LaunchedEffect(authState) {
+        Log.d("LoginScreen", "AuthState changed: $authState")
+        if (authState is AuthState.Success) {
+            Log.d("LoginScreen", "Login success, navigating...")
+            onLoginSuccess()
+            // JANGAN langsung reset di sini, biarkan setelah navigasi selesai
+        }
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFF0A083A))
     ) {
+
         Image(
             painter = painterResource(id = R.drawable.background),
             contentDescription = "Background",
@@ -84,18 +90,14 @@ fun LoginScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 24.dp, vertical = 32.dp), // 24dp kiri & kanan
-            horizontalAlignment = Alignment.Start,
-            verticalArrangement = Arrangement.Center
+                .padding(24.dp),
+            horizontalAlignment = Alignment.Start
         ) {
-            // 🔙 Panah back sejajar kiri dengan teks
+
+            // BACK BUTTON
             IconButton(
                 onClick = onBack,
-                modifier = Modifier
-                    .align(Alignment.Start)
-                    .offset(x = (-8).dp)
-                    .size(36.dp)
-                    .padding(bottom = 12.dp) // jarak ke teks
+                modifier = Modifier.size(32.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.ArrowBack,
@@ -104,27 +106,26 @@ fun LoginScreen(
                 )
             }
 
-            // 🔹 Judul
+            Spacer(modifier = Modifier.height(32.dp))
+
             Text(
-                text = "Sign in to your\nAccount",
+                text = "Sign in to your Account",
                 color = Color.White,
                 fontSize = 28.sp,
-                fontWeight = FontWeight.Bold,
-                lineHeight = 32.sp,
-                textAlign = TextAlign.Left
+                fontWeight = FontWeight.Bold
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "Enter your email and password to sign in",
-                color = Color.White,
+                text = "Enter your email and password to log in",
+                color = Color(0xFFE0E0E0),
                 fontSize = 14.sp
             )
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // 🔹 Email
+            // EMAIL FIELD
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
@@ -133,28 +134,23 @@ fun LoginScreen(
                 leadingIcon = {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_email),
-                        contentDescription = "Email Icon",
+                        contentDescription = null,
                         tint = Color.Gray
                     )
                 },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
+                modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedContainerColor = Color.White,
                     unfocusedContainerColor = Color.White,
                     focusedBorderColor = Color.Transparent,
-                    unfocusedBorderColor = Color.Transparent,
-                    cursorColor = Color.Black,
-                    focusedTextColor = Color.Black,
-                    unfocusedTextColor = Color.Black
+                    unfocusedBorderColor = Color.Transparent
                 )
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 🔹 Password
+            // PASSWORD FIELD
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
@@ -164,89 +160,67 @@ fun LoginScreen(
                 leadingIcon = {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_password),
-                        contentDescription = "Password Icon",
+                        contentDescription = null,
                         tint = Color.Gray
                     )
                 },
                 trailingIcon = {
                     IconButton(onClick = { passwordVisible = !passwordVisible }) {
                         Icon(
-                            painter = painterResource(id = if (passwordVisible) R.drawable.ic_eye_open else R.drawable.ic_eye_closed),
-                            contentDescription = if (passwordVisible) "Hide Password" else "Show Password",
+                            painter = painterResource(
+                                id = if (passwordVisible) R.drawable.ic_eye_open else R.drawable.ic_eye_closed
+                            ),
+                            contentDescription = null,
                             tint = Color.Gray
                         )
                     }
                 },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
+                modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedContainerColor = Color.White,
                     unfocusedContainerColor = Color.White,
                     focusedBorderColor = Color.Transparent,
-                    unfocusedBorderColor = Color.Transparent,
-                    cursorColor = Color.Black,
-                    focusedTextColor = Color.Black,
-                    unfocusedTextColor = Color.Black
+                    unfocusedBorderColor = Color.Transparent
                 )
             )
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // 🔹 Remember + Forgot
-            var rememberMe by remember { mutableStateOf(false) }
-            val interactionSource = remember { MutableInteractionSource() }
-            var isHovered by remember { mutableStateOf(false) }
-
+            // REMEMBER ME + FORGOT PASSWORD
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 4.dp, top = 4.dp, end = 4.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.clickable { rememberMe = !rememberMe }
+                    modifier = Modifier.weight(1f)
                 ) {
                     Checkbox(
                         checked = rememberMe,
                         onCheckedChange = { rememberMe = it },
                         colors = CheckboxDefaults.colors(
-                            checkedColor = Color(0xFF4A90E2),
-                            checkmarkColor = Color.White,
+                            checkedColor = Color(0xFF2563EB),
                             uncheckedColor = Color.White
                         )
                     )
-                    Text(
-                        text = "Remember me",
-                        color = Color.White,
-                        fontSize = 14.sp,
-                        modifier = Modifier.padding(start = 4.dp)
-                    )
+                    Text("Remember me", color = Color.White, fontSize = 14.sp)
                 }
 
                 Text(
                     text = "Forgot Password ?",
-                    color = if (isHovered) Color(0xFF73A9FF) else Color(0xFF4A90E2),
+                    color = Color(0xFF4A90E2),
                     fontSize = 14.sp,
-                    modifier = Modifier
-                        .hoverable(interactionSource = interactionSource, enabled = true)
-                        .clickable { onForgotPassword() }
+                    modifier = Modifier.clickable { onForgotPassword() }
                 )
-            }
-
-            LaunchedEffect(interactionSource) {
-                interactionSource.interactions.collect { i ->
-                    isHovered = i is androidx.compose.foundation.interaction.HoverInteraction.Enter
-                }
             }
 
             Spacer(modifier = Modifier.height(20.dp))
 
+            // LOGIN BUTTON
             Button(
-                onClick = { onLogin(email, password) },
+                onClick = { viewModel.loginUser(email, password) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp),
@@ -259,66 +233,62 @@ fun LoginScreen(
             Spacer(modifier = Modifier.height(20.dp))
 
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Divider(color = Color.White, thickness = 1.dp, modifier = Modifier.weight(1f))
-                Text("  Or  ", color = Color.White)
-                Divider(color = Color.White, thickness = 1.dp, modifier = Modifier.weight(1f))
+                Divider(color = Color(0xFFCCCCCC), modifier = Modifier.weight(1f))
+                Text(" Or ", color = Color.White, fontSize = 14.sp)
+                Divider(color = Color(0xFFCCCCCC), modifier = Modifier.weight(1f))
             }
 
             Spacer(modifier = Modifier.height(20.dp))
 
+            // GOOGLE LOGIN BUTTON
             OutlinedButton(
                 onClick = {
                     val client = GoogleAuthHelper.getClient(activity)
-                    googleLauncher.launch(client.signInIntent) },
+                    googleLauncher.launch(client.signInIntent)
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.outlinedButtonColors(
                     containerColor = Color.White,
-                    contentColor = Color.Gray
-                ),
+                    contentColor = Color.Black
+                )
             ) {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_google),
-                    contentDescription = "Google",
-                    tint = Color.Unspecified
+                    contentDescription = null
                 )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "Continue with Google",
-                    color = Color.Black,
-                    fontWeight = FontWeight.Bold
-                )
+                Spacer(Modifier.width(8.dp))
+                Text("Continue with Google")
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
+            // SIGN UP TEXT
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
+                horizontalArrangement = Arrangement.Center
             ) {
-                Text(
-                    text = "Don’t have an account?",
-                    color = Color.LightGray,
-                    textAlign = TextAlign.Center
-                )
+                Text("Don’t have an account?", color = Color.LightGray)
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = "Sign Up",
+                    "Sign Up",
                     color = Color(0xFF4A90E2),
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.clickable { onSignUp() }
+                    modifier = Modifier.clickable { onNavigateRegister() }
                 )
             }
-            LaunchedEffect(authState) {
-                if (authState is AuthState.Success) {
-                    onLoginSuccess()
-                }
+
+            if (authState is AuthState.Error) {
+                Text(
+                    text = (authState as AuthState.Error).message,
+                    color = Color.Red,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
             }
         }
     }

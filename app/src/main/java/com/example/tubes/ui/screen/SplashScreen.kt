@@ -26,8 +26,10 @@ data class SplashFrame(
 )
 
 @Composable
-fun SplashScreen(navController: NavController, viewModel: AuthViewModel) {
-    // Daftar frame dengan durasi masing-masing
+fun SplashScreen(
+    onAnimationFinished: () -> Unit
+) {
+    // Semua frames animasi
     val frames = remember {
         listOf(
             SplashFrame(R.drawable.splash1, 1200),
@@ -38,12 +40,12 @@ fun SplashScreen(navController: NavController, viewModel: AuthViewModel) {
             SplashFrame(R.drawable.splash6, 1000),
             SplashFrame(R.drawable.splash7, 1000),
             SplashFrame(R.drawable.splash8, 800),
-            SplashFrame(R.drawable.splash9, 650),  // Q - dipercepat
-            SplashFrame(R.drawable.splash10, 650), // U - dipercepat
-            SplashFrame(R.drawable.splash11, 650), // O - dipercepat
-            SplashFrame(R.drawable.splash12, 650), // R - dipercepat
-            SplashFrame(R.drawable.splash13, 650), // R - dipercepat
-            SplashFrame(R.drawable.splash14, 650), // I - dipercepat
+            SplashFrame(R.drawable.splash9, 650),
+            SplashFrame(R.drawable.splash10, 650),
+            SplashFrame(R.drawable.splash11, 650),
+            SplashFrame(R.drawable.splash12, 650),
+            SplashFrame(R.drawable.splash13, 650),
+            SplashFrame(R.drawable.splash14, 650),
             SplashFrame(R.drawable.splash15, 1000),
             SplashFrame(R.drawable.splash16, 800),
             SplashFrame(R.drawable.splash17, 800)
@@ -56,15 +58,20 @@ fun SplashScreen(navController: NavController, viewModel: AuthViewModel) {
 
     val fadeDuration = 700
 
+    // ===== ANIMASI SPLASH =====
     LaunchedEffect(Unit) {
-        viewModel.forceLogout()
         while (currentFrameIndex < frames.size - 1) {
-            val currentFrame = frames[currentFrameIndex]
 
+            val frame = frames[currentFrameIndex]
+
+            // reset alpha
             currentAlpha.snapTo(1f)
             nextAlpha.snapTo(0f)
 
-            delay(currentFrame.duration)
+            // tunggu durasi frame
+            delay(frame.duration)
+
+            // fade out current frame
             launch {
                 currentAlpha.animateTo(
                     targetValue = 0f,
@@ -74,6 +81,8 @@ fun SplashScreen(navController: NavController, viewModel: AuthViewModel) {
                     )
                 )
             }
+
+            // fade in next frame
             launch {
                 nextAlpha.animateTo(
                     targetValue = 1f,
@@ -84,28 +93,28 @@ fun SplashScreen(navController: NavController, viewModel: AuthViewModel) {
                 )
             }
 
-
-            // Tunggu crossfade selesai
             delay(fadeDuration.toLong())
 
-            // Pindah ke frame berikutnya
             currentFrameIndex++
         }
 
-        // Frame terakhir
+        // tunggu frame terakhir
         delay(frames.last().duration)
-        navController.navigate("login_screen") {
-            popUpTo(0)
-        }
+
+        // ➜ Kirim event ke Navigation (bukan ViewModel)
+        onAnimationFinished()
     }
 
+
+    // ===== UI LAYER =====
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFF2B3A67)),
         contentAlignment = Alignment.Center
     ) {
-        // Frame saat ini
+
+        // Current frame
         Image(
             painter = painterResource(id = frames[currentFrameIndex].image),
             contentDescription = null,
@@ -115,7 +124,7 @@ fun SplashScreen(navController: NavController, viewModel: AuthViewModel) {
             contentScale = ContentScale.Crop
         )
 
-        // Frame berikutnya (untuk crossfade)
+        // Next frame untuk crossfade
         if (currentFrameIndex < frames.size - 1) {
             Image(
                 painter = painterResource(id = frames[currentFrameIndex + 1].image),
@@ -128,3 +137,5 @@ fun SplashScreen(navController: NavController, viewModel: AuthViewModel) {
         }
     }
 }
+
+
