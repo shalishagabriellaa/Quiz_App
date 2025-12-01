@@ -26,6 +26,7 @@ import com.example.tubes.viewmodel.AuthState
 import com.example.tubes.viewmodel.AuthViewModel
 import com.example.tubes.viewmodel.HomeViewModel
 import com.example.tubes.data.repository.QuizRepositoryImpl
+import com.example.tubes.ui.screen.quizzes.YourQuizzesScreen
 import com.example.tubes.viewmodel.QuizViewModel
 
 @Composable
@@ -196,6 +197,30 @@ fun AppNavigation() {
             )
         }
 
+        // ========== TOP AUTHORS FULL LIST ==========
+        composable("topAuthors") {
+            val state by homeViewModel.uiState.collectAsState()
+
+            TopAuthorsScreen(
+                authors = state.topAuthors.map { it.toAuthorUi() },
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
+// ========== YOUR QUIZZES FULL LIST ==========
+        composable("yourQuizzes") {
+            val state by homeViewModel.uiState.collectAsState()
+
+            YourQuizzesScreen(
+                quizzes = state.yourQuizzesUi,
+                onBackClick = { navController.popBackStack() },
+                onQuizClick = { quizId ->
+                    navController.navigate("testInfo/$quizId")
+                }
+            )
+        }
+
+
         // ========== MAIN / HOME ==========
         composable("main") {
             val authStateMain by authViewModel.authState.collectAsState()
@@ -223,7 +248,7 @@ fun AppNavigation() {
                     categories = state.categoriesUi,
                     trending = state.trendingUi,
                     topPicks = emptyList(),
-                    yourQuizzes = emptyList(),
+                    yourQuizzes = state.yourQuizzesUi,
                     topAuthors = state.topAuthors.map { it.toAuthorUi() },
                     userName = state.userName,
                     avatarUrl = state.avatarUrl,
@@ -251,16 +276,28 @@ fun AppNavigation() {
                         )
                     },
 
-                    onTrendingSeeAll = {                          // ⬅️ TAMBAH INI
+                    onTrendingSeeAll = {
                         navController.navigate("trending")
                     },
 
                     onTrendingClick = { quizId ->
+                        navController.navigate("testInfo/$quizId")
+                    },
+
+                    // 🔹 BARU
+                    onTopAuthorsSeeAll = {
+                        navController.navigate("topAuthors")
+                    },
+                    onYourQuizSeeAll = {
+                        navController.navigate("yourQuizzes")
+                    },
+                    onYourQuizClick = { quizId ->
                         navController.navigate("testInfo/$quizId")
                     }
                 )
 
             }
         }
+
     }
 }

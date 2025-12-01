@@ -4,10 +4,13 @@ import androidx.lifecycle.ViewModel
 import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.example.tubes.data.model.User
+import com.example.tubes.data.repository.HomeRepositoryImpl
 import com.example.tubes.domain.repository.HomeRepository
 import com.example.tubes.ui.screen.home.models.CategoryUi
 import com.example.tubes.ui.screen.home.models.QuizUi
+import com.example.tubes.ui.screen.home.models.YourQuizUi
 import com.example.tubes.ui.screen.home.models.toUi
+import com.example.tubes.ui.screen.home.models.toYourQuizUi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -53,7 +56,11 @@ class HomeViewModel(
                     )
                 }
 
-                // 🔹 Ambil nama dari fullName dulu, kalau null pakai name, kalau null lagi pakai email
+                // 🆕 Ambil quiz results user
+                val repoImpl = repo as? HomeRepositoryImpl
+                val yourQuizResults = repoImpl?.getUserQuizResults(uid) ?: emptyList()
+                val yourQuizzesUi = yourQuizResults.map { it.toYourQuizUi() }
+
                 val displayName = user?.fullName
                     ?: user?.name
                     ?: user?.email?.substringBefore("@")
@@ -66,6 +73,7 @@ class HomeViewModel(
                     categoriesUi = categoriesUi,
                     trendingUi = trendingUi,
                     topAuthors = topAuthors,
+                    yourQuizzesUi = yourQuizzesUi,
                     avatarUrl = user?.avatarUrl
                 )
             } catch (e: Exception) {
@@ -77,7 +85,6 @@ class HomeViewModel(
         }
     }
 
-    // 🔹 DIPAKAI OLEH HomeTopBar (search quiz code)
     fun searchQuizByCode(
         code: String,
         onFound: (String) -> Unit
@@ -94,7 +101,7 @@ class HomeViewModel(
                 val quizId = repo.findQuizIdByCode(code)
                 if (quizId != null) {
                     _uiState.value = _uiState.value.copy(searchError = null)
-                    onFound(quizId) // kasih ke UI untuk navigate
+                    onFound(quizId)
                 } else {
                     _uiState.value = _uiState.value.copy(
                         searchError = "Can't find the quiz by the code given"
@@ -115,6 +122,7 @@ data class HomeUiState(
     val categoriesUi: List<CategoryUi> = emptyList(),
     val trendingUi: List<QuizUi> = emptyList(),
     val topAuthors: List<User> = emptyList(),
+    val yourQuizzesUi: List<YourQuizUi> = emptyList(),
     val isLoading: Boolean = true,
     val error: String? = null,
     val searchError: String? = null

@@ -15,6 +15,7 @@ import com.example.tubes.ui.screen.TestInformationScreen
 import com.example.tubes.ui.screen.QuizScreen
 import com.example.tubes.ui.screen.AnswerExplanationScreen
 import com.example.tubes.AppNavigation
+import com.example.tubes.TeacherAppNavigation
 
 import com.example.tubes.ui.theme.TubesTheme
 
@@ -31,7 +32,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             MaterialTheme {
-                AppNavigation()
+                TeacherAppNavigation()
                 }
             }
         }

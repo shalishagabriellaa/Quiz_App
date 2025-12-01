@@ -95,10 +95,13 @@ class QuizRepositoryImpl(
     /**
      * Menyimpan hasil quiz ke user profile
      */
+    // Update fungsi submitQuizResult di QuizRepositoryImpl.kt
+// Tambahkan setelah update attemptCount
+
     override suspend fun submitQuizResult(
         userId: String,
         quizId: String,
-        score: Int,              // <- sekarang ini POINTS per attempt
+        score: Int,
         totalQuestions: Int
     ) {
         try {
@@ -110,7 +113,7 @@ class QuizRepositoryImpl(
 
             if (userDoc.exists()) {
                 val currentScore = userDoc.getLong("totalScore")?.toInt() ?: 0
-                val newScore = currentScore + score   // <- tambah POINTS
+                val newScore = currentScore + score
                 userRef.update("totalScore", newScore).await()
                 Log.d(TAG, "User points updated: $currentScore -> $newScore")
             }
@@ -119,11 +122,44 @@ class QuizRepositoryImpl(
             val quizRef = firestore.collection(COLLECTION_QUIZZES).document(quizId)
             val quizDoc = quizRef.get().await()
 
+            var quizTitle = ""
+            var quizBanner: String? = null
+            var questionsCount = 0L
+
             if (quizDoc.exists()) {
                 val currentAttempts = quizDoc.getLong("attemptCount")?.toInt() ?: 0
                 quizRef.update("attemptCount", currentAttempts + 1).await()
+
+                // Ambil info quiz untuk disimpan di result
+                quizTitle = quizDoc.getString("title") ?: ""
+                quizBanner = quizDoc.getString("bannerUrl")
+                questionsCount = quizDoc.getLong("questionCount") ?: 0L
+
                 Log.d(TAG, "Quiz attempt count updated")
             }
+
+            // 🆕 Simpan hasil quiz ke subcollection user
+            val quizResultData = hashMapOf(
+                "quizId" to quizId,
+                "quizTitle" to quizTitle,
+                "quizBannerUrl" to quizBanner,
+                "questionsCount" to questionsCount,
+                "lastScore" to score.toLong(),
+                "correctAnswers" to (score * totalQuestions / 10).toLong(),  // Hitung balik dari poin
+                "totalQuestions" to totalQuestions.toLong(),
+                "lastPlayedAt" to com.google.firebase.Timestamp.now()
+            )
+
+            // Simpan ke users/{userId}/quizResults/{quizId}
+            // Dengan ID quizId, hasil akan ter-overwrite otomatis untuk quiz yang sama
+            firestore.collection(COLLECTION_USERS)
+                .document(userId)
+                .collection("quizResults")
+                .document(quizId)
+                .set(quizResultData)
+                .await()
+
+            Log.d(TAG, "Quiz result saved to user profile")
 
         } catch (e: Exception) {
             Log.e(TAG, "Error submitting quiz result", e)

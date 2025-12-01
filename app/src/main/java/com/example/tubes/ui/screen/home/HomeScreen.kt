@@ -32,16 +32,14 @@ import com.example.tubes.ui.screen.home.components.HomeTopBar
 import com.example.tubes.ui.screen.home.models.AuthorUi
 import com.example.tubes.ui.screen.home.models.CategoryUi
 import com.example.tubes.ui.screen.home.models.QuizUi
+import com.example.tubes.ui.screen.home.models.YourQuizUi
 
-/* =======================
- *   HOME SCREEN
- * ======================= */
 @Composable
 fun HomeScreen(
     categories: List<CategoryUi>,
     trending: List<QuizUi>,
     topPicks: List<QuizUi>,
-    yourQuizzes: List<QuizUi>,
+    yourQuizzes: List<YourQuizUi>,
     topAuthors: List<AuthorUi>,
     userName: String,
     avatarUrl: String?,
@@ -55,14 +53,15 @@ fun HomeScreen(
     onCategorySeeAll: () -> Unit,
     onCategoryClick: (CategoryUi) -> Unit,
     onTrendingSeeAll: () -> Unit,
-    onTrendingClick: (String) -> Unit
+    onTrendingClick: (String) -> Unit,
+    onYourQuizSeeAll: () -> Unit = {},
+    onYourQuizClick: (String) -> Unit = {},
+    onTopAuthorsSeeAll: () -> Unit
 ) {
-    // state tab untuk bottom bar (tanpa navigation dulu)
     var selectedTab by remember { mutableStateOf(BottomTab.Home) }
 
     Box(Modifier.fillMaxSize()) {
 
-        // BG: kalau tidak punya drawable, ganti ke gradient
         Image(
             painter = painterResource(id = R.drawable.section_bg),
             contentDescription = null,
@@ -70,26 +69,20 @@ fun HomeScreen(
             contentScale = ContentScale.Crop
         )
 
-        // SATU-SATUNYA SCROLL VERTICAL
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = 120.dp) // ruang bottom bar
+            contentPadding = PaddingValues(bottom = 120.dp)
         ) {
-            // Topbar (punya wave image sendiri)
             item {
                 HomeTopBar(
                     userName = userName,
-                    avatarUrl = avatarUrl,
                     onSettings = onSettings,
-                    onAvatarClick = onProfile,
                     onSearch = onSearchQuizCode
                 )
             }
 
-            // Sedikit jarak agar terasa blend halus (tweak bila perlu)
             item { Spacer(Modifier.height(12.dp)) }
 
-            // Isi section (semua list di dalamnya bisa horizontal scroll)
             item {
                 HomeSection(
                     categories = categories,
@@ -100,14 +93,16 @@ fun HomeScreen(
                     onCategorySeeAll = onCategorySeeAll,
                     onCategoryClick = onCategoryClick,
                     onTrendingSeeAll = onTrendingSeeAll,
-                    onTrendingClick = onTrendingClick
+                    onTrendingClick = onTrendingClick,
+                    onYourQuizSeeAll = onYourQuizSeeAll,
+                    onYourQuizClick = onYourQuizClick,
+                    onTopAuthorsSeeAll = onTopAuthorsSeeAll
                 )
             }
 
             item { Spacer(Modifier.height(24.dp)) }
         }
 
-        // Bottom bar custom (tanpa navigation)
         HomeBottomNav(
             selected = selectedTab,
             onSelected = { selectedTab = it },
@@ -117,10 +112,6 @@ fun HomeScreen(
     }
 }
 
-/* =======================
- *   BOTTOM BAR (inline)
- * ======================= */
-
 enum class BottomTab(val label: String) {
     Home("Home"),
     Quizzes("Quizzes"),
@@ -128,9 +119,9 @@ enum class BottomTab(val label: String) {
     Profile("Profile")
 }
 
-private val BarPurple  = Color(0xFF4C4FA4)   // warna bar
-private val DeepBlue   = Color(0xFF162471)   // ring/icon aktif
-private val GoldActive = Color(0xFFF4D488)   // lingkaran aktif
+private val BarPurple  = Color(0xFF4C4FA4)
+private val DeepBlue   = Color(0xFF162471)
+private val GoldActive = Color(0xFFF4D488)
 
 @Composable
 fun HomeBottomNav(
@@ -144,7 +135,6 @@ fun HomeBottomNav(
             .fillMaxWidth()
             .height(98.dp)
     ) {
-        // Bar container rounded top
         Box(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -171,7 +161,7 @@ fun HomeBottomNav(
                     selected = selected == BottomTab.Quizzes
                 ) { onSelected(BottomTab.Quizzes) }
 
-                Spacer(Modifier.width(56.dp)) // ruang QR center
+                Spacer(Modifier.width(56.dp))
 
                 BarItem(
                     text = BottomTab.Leaderboard.label,
@@ -186,7 +176,6 @@ fun HomeBottomNav(
                 ) { onSelected(BottomTab.Profile) }
             }
 
-            // "home indicator" putih kecil
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
@@ -197,7 +186,6 @@ fun HomeBottomNav(
             )
         }
 
-        // Tombol QR melayang di tengah
         Box(
             modifier = Modifier
                 .align(Alignment.TopCenter)

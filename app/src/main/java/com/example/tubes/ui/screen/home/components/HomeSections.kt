@@ -25,20 +25,23 @@ import coil.compose.AsyncImage
 import com.example.tubes.ui.screen.home.models.AuthorUi
 import com.example.tubes.ui.screen.home.models.CategoryUi
 import com.example.tubes.ui.screen.home.models.QuizUi
+import com.example.tubes.ui.screen.home.models.YourQuizUi
 
-/* ====== HomeSection (ISI SAJA) ====== */
 @Composable
 fun HomeSection(
     categories: List<CategoryUi>,
     trending: List<QuizUi>,
     topAuthors: List<AuthorUi>,
     topPicks: List<QuizUi>,
-    yourQuizzes: List<QuizUi>,
+    yourQuizzes: List<YourQuizUi>,
     modifier: Modifier = Modifier,
     onCategorySeeAll: () -> Unit = {},
     onCategoryClick: (CategoryUi) -> Unit = {},
     onTrendingSeeAll: () -> Unit = {},
-    onTrendingClick: (String) -> Unit = {}
+    onTrendingClick: (String) -> Unit = {},
+    onTopAuthorsSeeAll: () -> Unit = {},          // 🔹 BARU
+    onYourQuizSeeAll: () -> Unit = {},            // 🔹 BARU
+    onYourQuizClick: (String) -> Unit = {}        // 🔹 klik item your quiz
 ) {
     Column(
         modifier = modifier
@@ -48,7 +51,7 @@ fun HomeSection(
 
         /* ---------- Category ---------- */
         SectionHeader(
-            "Category",
+            title = "Category",
             onSeeAll = onCategorySeeAll
         )
         Spacer(Modifier.height(12.dp))
@@ -137,7 +140,7 @@ fun HomeSection(
             items(trending) { quiz ->
                 QuizLargeCard(
                     q = quiz,
-                    onClick = { onTrendingClick(quiz.id) }   // ⬅️ KLIK KIRIM quizId
+                    onClick = { onTrendingClick(quiz.id) }
                 )
             }
         }
@@ -145,7 +148,10 @@ fun HomeSection(
         Spacer(Modifier.height(24.dp))
 
         /* ---------- Top Authors ---------- */
-        SectionHeader("Top Authors")
+        SectionHeader(
+            title = "Top Authors",
+            onSeeAll = onTopAuthorsSeeAll       // 🔹 SEKARANG ADA SEE ALL
+        )
         Spacer(Modifier.height(12.dp))
         LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             items(topAuthors) { author ->
@@ -178,15 +184,24 @@ fun HomeSection(
         Spacer(Modifier.height(24.dp))
 
         /* ---------- Your Quizzes ---------- */
-        SectionHeader("Your Quizzes")
+        SectionHeader(
+            title = "Your Quizzes",
+            onSeeAll = if (yourQuizzes.isNotEmpty()) onYourQuizSeeAll else null
+        )
         Spacer(Modifier.height(12.dp))
+
+        val displayedQuizzes = yourQuizzes.take(3)
+
         Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            yourQuizzes.forEach { item -> YourQuizRow(item) }
+            displayedQuizzes.forEach { item ->
+                YourQuizRow(
+                    q = item,
+                    onClick = { onYourQuizClick(item.quizId) }
+                )
+            }
         }
     }
 }
-
-/* ====== Sub-UI ====== */
 
 @Composable
 private fun SectionHeader(
@@ -205,21 +220,18 @@ private fun SectionHeader(
             color = Color.Black
         )
 
-        Text(
-            "See all",
-            color = Color(0xFF212252),
-            fontSize = 12.sp,
-            fontWeight = FontWeight.SemiBold,
-            modifier = Modifier
-                .let { m ->
-                    if (onSeeAll != null) {
-                        m
-                            .clip(RoundedCornerShape(8.dp))
-                            .clickable { onSeeAll() }
-                            .padding(4.dp)
-                    } else m
-                }
-        )
+        if (onSeeAll != null) {
+            Text(
+                "See all",
+                color = Color(0xFF212252),
+                fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .clickable { onSeeAll() }
+                    .padding(4.dp)
+            )
+        }
     }
 }
 
@@ -233,10 +245,9 @@ private fun QuizLargeCard(
             .width(220.dp)
             .clip(RoundedCornerShape(16.dp))
             .background(Color.White)
-            .clickable(onClick = onClick)   // ⬅️ CLICKABLE
+            .clickable(onClick = onClick)
     ) {
 
-        // Banner
         Box(
             modifier = Modifier
                 .height(130.dp)
@@ -289,7 +300,6 @@ private fun QuizLargeCard(
 
         Spacer(Modifier.height(10.dp))
 
-        // Author + avatar
         Row(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
@@ -318,7 +328,10 @@ private fun QuizLargeCard(
 }
 
 @Composable
-private fun YourQuizRow(q: QuizUi) {
+private fun YourQuizRow(
+    q: YourQuizUi,
+    onClick: () -> Unit
+) {
     Column {
         Box(
             Modifier
@@ -332,6 +345,7 @@ private fun YourQuizRow(q: QuizUi) {
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(16.dp))
                     .background(Color.White)
+                    .clickable(onClick = onClick)
                     .padding(horizontal = 12.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -340,31 +354,50 @@ private fun YourQuizRow(q: QuizUi) {
                         .size(38.dp)
                         .clip(RoundedCornerShape(10.dp))
                         .background(Color(0xFFB8B8FF))
-                )
-                Spacer(Modifier.width(10.dp))
-                Column(Modifier.weight(1f)) {
-                    Text(q.title, color = Color(0xFF1E1E1E), fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-                    Text("${q.questionsCount} Questions", color = Color(0xFF7B7F9F), fontSize = 12.sp)
+                ) {
+                    if (!q.bannerUrl.isNullOrEmpty()) {
+                        AsyncImage(
+                            model = q.bannerUrl,
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
                 }
-                Spacer(Modifier.width(8.dp))
-                Text("Result", color = Color(0xFF6D6ADB), fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-            }
-        }
 
-        Spacer(Modifier.height(6.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            repeat(3) {
-                Box(
-                    Modifier
-                        .size(24.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFFB2B8FF))
-                        .border(2.dp, Color.Black, CircleShape)
-                )
-                Spacer(Modifier.width((-8).dp))
+                Spacer(Modifier.width(10.dp))
+
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        q.title,
+                        color = Color(0xFF1E1E1E),
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Text(
+                        "${q.questionsCount} Questions",
+                        color = Color(0xFF7B7F9F),
+                        fontSize = 12.sp
+                    )
+                }
+
+                Spacer(Modifier.width(8.dp))
+
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        "${q.correctAnswers}/${q.totalQuestions}",
+                        color = Color(0xFF6D6ADB),
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        "Score: ${q.lastScore}",
+                        color = Color(0xFF6D6ADB),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
             }
-            Spacer(Modifier.width(10.dp))
-            Text("+8127 People join", color = Color.Black, fontSize = 12.sp)
         }
     }
 }

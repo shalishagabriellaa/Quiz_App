@@ -3,6 +3,7 @@ package com.example.tubes.ui.screen.home.models
 import com.example.tubes.data.model.Category
 import com.example.tubes.data.model.Quiz
 import com.example.tubes.data.model.User
+import com.example.tubes.data.model.UserQuizResult
 import com.google.firebase.Timestamp
 
 fun Quiz.toUi(
@@ -31,5 +32,18 @@ fun User.toAuthorUi(): AuthorUi {
     return AuthorUi(
         fullName = this.fullName ?: this.name ?: "Unknown",
         avatarUrl = this.avatarUrl
+    )
+}
+
+fun UserQuizResult.toYourQuizUi(): YourQuizUi {
+    return YourQuizUi(
+        quizId = this.quizId,
+        title = this.quizTitle,
+        bannerUrl = this.quizBannerUrl,
+        questionsCount = this.questionsCount,
+        lastScore = this.lastScore,
+        correctAnswers = this.correctAnswers,
+        totalQuestions = this.totalQuestions,
+        lastPlayedAt = this.lastPlayedAt
     )
 }
