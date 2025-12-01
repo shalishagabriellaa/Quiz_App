@@ -18,6 +18,9 @@ import android.util.Log
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.graphics.Color
+import com.example.tubes.ui.screen.profile.ProfileScreen
+import com.example.tubes.ui.screen.setting.SettingScreen
+
 import com.google.firebase.FirebaseApp
 import com.google.firebase.firestore.FirebaseFirestore
 
@@ -27,7 +30,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             MaterialTheme {
                 Surface(color = Color.White) {
-                    CategorySpecifyScreen() // ← diganti ke screen yang kamu mau
+                    SettingScreen()
                 }
             }
         }
