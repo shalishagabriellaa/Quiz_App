@@ -193,14 +193,11 @@ fun QuizScreen(
                     Spacer(modifier = Modifier.weight(1f))
                 }
 
-                // Tombol Next / Submit
                 Button(
                     onClick = {
                         if (uiState.currentQuestionIndex == uiState.questions.size - 1) {
-                            // Panggil submitQuiz dengan cara yang sudah benar
                             viewModel.submitQuiz(
                                 userId = userId,
-                                onComplete = onQuizComplete // Gunakan callback yang sudah disederhanakan
                             )
                         } else {
                             viewModel.nextQuestion()

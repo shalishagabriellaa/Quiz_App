@@ -35,18 +35,15 @@ fun ProfileOptionItem(
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Ikon di sebelah kiri
         Icon(
             painter = painterResource(id = option.iconResId),
             contentDescription = option.text, // Deskripsi untuk aksesibilitas
-            // SARAN: Gunakan warna dari tema agar konsisten
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.size(24.dp)
         )
 
         Spacer(modifier = Modifier.width(16.dp))
 
-        // Teks di tengah
         Text(
             text = option.text,
             // SARAN: Gunakan gaya teks dari tema
@@ -59,7 +56,6 @@ fun ProfileOptionItem(
         Icon(
             imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
             contentDescription = null, // Ikon ini murni dekoratif
-            // SARAN: Gunakan warna dari tema
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.size(24.dp)
         )
@@ -72,7 +68,7 @@ fun ProfileOptionItem(
 private fun ProfileOptionItemPreview() {
     TubesTheme {
         val sampleOption = ProfileOption(
-            iconResId = R.drawable.uil_setting, // Ganti dengan ikon valid
+            iconResId = R.drawable.uil_setting,
             text = "Settings",
             route = "settings"
         )

@@ -47,7 +47,8 @@ data class QuizUiState(
     val error: String? = null,
     val isSubmitted: Boolean = false,
     val score: Int = 0,
-    val currentUserId: String? = null
+    val currentUserId: String? = null,
+    val questionResults: Map<String, Boolean> = emptyMap()
 )
 
 fun String.toAnswerIndex(): Int {

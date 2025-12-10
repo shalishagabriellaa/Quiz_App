@@ -123,14 +123,11 @@ class QuizViewModel(
         }
     }
 
-    // --- [PERUBAHAN 2: Fungsi submitQuiz Dirombak Total] ---
-    // Semua logika perhitungan skor DIHAPUS dari ViewModel.
-    // Fungsi ini sekarang hanya mengirimkan jawaban ke Repository.
     fun submitQuiz(
         userId: String?,
-        onComplete: () -> Unit = { } // Callback disederhanakan, tidak lagi mengirim skor.
+        // [PENTING] Hapus parameter onComplete dari sini untuk mencegah navigasi prematur
+        // onComplete: () -> Unit = { }
     ) {
-        // Ambil ID pengguna dari state jika tidak disediakan
         val finalUserId = userId ?: _uiState.value.currentUserId
         if (finalUserId == null) {
             Log.e(TAG, "Cannot submit quiz, userId is null.")
@@ -142,42 +139,58 @@ class QuizViewModel(
             try {
                 timerJob?.cancel()
                 val state = _uiState.value
-                val quizId = state.quiz?.id
+                val quiz = state.quiz ?: return@launch
 
-                if (quizId == null) {
-                    _uiState.update { it.copy(error = "Quiz ID is missing, cannot submit.") }
-                    return@launch
+                // --- 1. LOGIKA VALIDASI DAN PERHITUNGAN SKOR DIKEMBALIKAN ---
+                var correctAnswersCount = 0
+                val questionResults = mutableMapOf<String, Boolean>() // Untuk UI Penjelasan
+
+                state.questions.forEach { question ->
+                    val userAnswer = state.userAnswers[question.id]
+                    // Ambil jawaban yang benar dari `options` berdasarkan `correctAnswerIndex`
+                    val correctAnswerText = question.options.getOrNull(question.correctAnswerIndex)
+
+                    val isCorrect = (userAnswer == correctAnswerText)
+                    if (isCorrect) {
+                        correctAnswersCount++
+                    }
+                    questionResults[question.id] = isCorrect
                 }
 
-                // TIDAK ADA LAGI PERHITUNGAN SKOR DI SINI.
-                Log.d(TAG, "Submitting quiz '$quizId' for user '$finalUserId' with answers: ${state.userAnswers}")
+                val finalScore = if (state.questions.isNotEmpty()) {
+                    (correctAnswersCount.toDouble() / state.questions.size * 100).toInt()
+                } else {
+                    0
+                }
+                Log.d(TAG, "Validation complete. Score: $finalScore")
 
-                // Panggil repository dengan format yang BENAR.
+                // 2. Panggil repository untuk menyimpan hasil ke database (ini tetap berjalan)
                 repository.submitQuizResult(
                     userId = finalUserId,
-                    quizId = quizId,
-                    userAnswers = state.userAnswers // Kirim Map jawaban pengguna
+                    quizId = quiz.id,
+                    userAnswers = state.userAnswers // Sesuai dengan repository Anda yang cerdas
                 )
 
-                // Update UI untuk menandakan kuis telah selesai.
+                // 3. Update UI dengan HASIL LENGKAP agar bisa menampilkan BottomSheet
                 _uiState.update {
                     it.copy(
                         isSubmitted = true,
-                        // Skor tidak lagi dihitung di sini, jadi kita tidak tahu nilainya.
-                        // Layar hasil harus mengambil skor terbaru dari `quizResults` di Firestore.
-                        score = 0
+                        score = finalScore, // Gunakan skor yang benar
+                        questionResults = questionResults // Kirim data detail benar/salah ke UI
                     )
                 }
 
-                Log.d(TAG, "Quiz submission request sent to repository successfully.")
-                onComplete() // Panggil callback untuk navigasi
+                // 4. JANGAN panggil onComplete() di sini.
+                // Biarkan UI (QuizScreen) yang memutuskan kapan harus navigasi.
+                Log.d(TAG, "State updated. UI should now react and show explanation.")
 
             } catch (e: Exception) {
                 Log.e(TAG, "Error submitting quiz", e)
-                _uiState.update { it.copy(error = "Failed to submit quiz: ${e.message}") }
+                _uiState.update { it.copy(error = "Gagal submit kuis: ${e.message}") }
             }
         }
     }
+
 
     // Fungsi resetQuiz dan onCleared tidak perlu diubah.
     fun resetQuiz() {
