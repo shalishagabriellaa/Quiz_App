@@ -5,7 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.*
 
-import com.example.tubes.ui.screen.teacher.TeacherProfileScreen
+import com.example.tubes.ui.screen.teacher.NotificationScreen
 
 import com.example.tubes.AppNavigation
 import com.example.tubes.TeacherAppNavigation
@@ -37,7 +37,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            TeacherProfileScreen()
+            NotificationScreen()
         }
     }
 }
