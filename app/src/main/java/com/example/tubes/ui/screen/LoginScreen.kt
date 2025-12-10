@@ -24,11 +24,10 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
-import androidx.navigation.NavController
 import com.example.tubes.R
 import com.example.tubes.auth.GoogleAuthHelper
 import com.example.tubes.viewmodel.AuthViewModel
-import com.example.tubes.viewmodel.AuthState
+import com.example.tubes.data.AuthState
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.common.api.ApiException
 

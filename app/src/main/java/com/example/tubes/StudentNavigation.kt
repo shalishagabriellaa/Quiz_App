@@ -23,17 +23,19 @@ import com.example.tubes.ui.screen.*
 import com.example.tubes.ui.screen.home.HomeScreen
 import com.example.tubes.ui.screen.home.models.toAuthorUi
 import com.example.tubes.data.AuthState
+import com.example.tubes.data.repository.ProfileRepositoryImpl
 import com.example.tubes.viewmodel.AuthViewModel
 import com.example.tubes.viewmodel.HomeViewModel
 import com.example.tubes.data.repository.QuizRepositoryImpl
+import com.example.tubes.ui.screen.profile.ProfileScreen
 import com.example.tubes.ui.screen.quizzes.YourQuizzesScreen
+import com.example.tubes.viewmodel.ProfileViewModel
 import com.example.tubes.viewmodel.QuizViewModel
 
 @Composable
 fun StudentNavigation() {
     val navController = rememberNavController()
 
-    // --- Auth ViewModel ---
     val authRepository = remember { AuthRepositoryImpl() }
     val authViewModel: AuthViewModel = viewModel(
         factory = object : ViewModelProvider.Factory {
@@ -44,10 +46,7 @@ fun StudentNavigation() {
         }
     )
 
-    // Sekarang baru boleh collect authState
     val authState by authViewModel.authState.collectAsState()
-
-    // --- Home ViewModel ---
     val homeRepository = remember { HomeRepositoryImpl() }
     val homeViewModel: HomeViewModel = viewModel(
         factory = object : ViewModelProvider.Factory {
@@ -72,6 +71,16 @@ fun StudentNavigation() {
     // Jika sudah login, mulai di "main", jika tidak, mulai di "login"
     // Ini mencegah layar login berkedip saat membuka ulang aplikasi.
     val startDestination = if (authState is AuthState.Success) "main" else Screen.LoginScreen.route
+
+    val profileRepository = remember { ProfileRepositoryImpl() }
+    val profileViewModel: ProfileViewModel = viewModel(
+        factory = object : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                @Suppress("UNCHECKED_CAST")
+                return ProfileViewModel(profileRepository) as T
+            }
+        }
+    )
 
     NavHost(
         navController = navController,
@@ -106,9 +115,14 @@ fun StudentNavigation() {
             )
         }
 
-        // Semua composable lainnya di bawah ini tidak perlu diubah sama sekali.
-        // Logikanya sudah benar.
+        // Di dalam NavHost
+// ...
 
+// ========== PROFILE ==========
+        composable(Screen.ProfileScreen.route) {
+            // BERIKAN VIEWMODEL-NYA KE SINI
+            ProfileScreen(viewModel = profileViewModel)
+        }
         // ========== SETTINGS ==========
         composable(Screen.SettingScreen.route) {
             SettingScreen()
@@ -119,7 +133,6 @@ fun StudentNavigation() {
             ProfileScreen()
         }
 
-        // ========== QUIZ (INTEGRATED WITH FIREBASE) ==========
         composable(Screen.QuizScreen.route + "/{quizId}") { backStackEntry ->
             val quizId = backStackEntry.arguments?.getString("quizId") ?: ""
 

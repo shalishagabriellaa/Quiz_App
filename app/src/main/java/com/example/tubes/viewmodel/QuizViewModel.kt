@@ -3,6 +3,7 @@ package com.example.tubes.viewmodel
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.tubes.data.model.QuestionUi // Pastikan ini di-import
 import com.example.tubes.data.model.QuizUiState
 import com.example.tubes.data.repository.QuizRepository
 import com.example.tubes.data.repository.QuizRepositoryImpl
@@ -15,7 +16,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class QuizViewModel(
-    private val repository: QuizRepository = QuizRepositoryImpl()
+    // Kita tidak perlu lagi membuat instance default di sini, biarkan Factory yang bekerja
+    private val repository: QuizRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(QuizUiState())
@@ -27,225 +29,159 @@ class QuizViewModel(
         private const val TAG = "QuizViewModel"
     }
 
-    /**
-     * Load quiz dan pertanyaan dari Firestore
-     */
+    // Fungsi loadQuiz() tidak ada perubahan signifikan, sudah benar.
+    fun setCurrentUserId(userId: String?) {
+        _uiState.update { it.copy(currentUserId = userId) }
+    }
+
     fun loadQuiz(quizId: String) {
         viewModelScope.launch {
             try {
                 Log.d(TAG, "Loading quiz: $quizId")
                 _uiState.update { it.copy(isLoading = true, error = null) }
 
-                // Ambil data quiz
                 val quiz = repository.getQuizById(quizId)
                 if (quiz == null) {
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            error = "Quiz not found"
-                        )
-                    }
+                    _uiState.update { it.copy(isLoading = false, error = "Quiz not found") }
                     return@launch
                 }
 
-                // Ambil pertanyaan
                 val questions = repository.getQuestionsByQuizId(quizId)
                 if (questions.isEmpty()) {
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            error = "No questions available"
-                        )
-                    }
+                    _uiState.update { it.copy(isLoading = false, error = "No questions available") }
                     return@launch
                 }
 
-                // Update state dengan data dari Firebase
                 _uiState.update {
                     it.copy(
                         quiz = quiz,
-                        questions = questions.map { q ->
-                            q.copy(category = quiz.title)
-                        },
-                        timeRemaining = quiz.timer.toInt(),
+                        questions = questions, // Tidak perlu di-map lagi
+                        timeRemaining = quiz.timer.toInt(), // Pastikan 'timer' ada di model Quiz Anda
                         isLoading = false,
-                        error = null
+                        error = null,
+                        // [PENTING] Reset jawaban lama saat memuat kuis baru
+                        userAnswers = emptyMap()
                     )
                 }
 
-                // Mulai timer
                 startTimer()
-
                 Log.d(TAG, "Quiz loaded successfully: ${questions.size} questions")
-
             } catch (e: Exception) {
                 Log.e(TAG, "Error loading quiz", e)
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        error = "Gagal memuat quiz: ${e.message}"
-                    )
-                }
+                _uiState.update { it.copy(isLoading = false, error = "Gagal memuat quiz: ${e.message}") }
             }
         }
     }
 
-    /**
-     * Mulai timer countdown
-     */
+    // Fungsi startTimer() tidak perlu diubah.
     private fun startTimer() {
         timerJob?.cancel()
         timerJob = viewModelScope.launch {
             while (_uiState.value.timeRemaining > 0 && !_uiState.value.isSubmitted) {
                 delay(1000)
-                _uiState.update {
-                    it.copy(timeRemaining = it.timeRemaining - 1)
-                }
+                _uiState.update { it.copy(timeRemaining = it.timeRemaining - 1) }
             }
-
-            // Auto submit jika waktu habis
             if (_uiState.value.timeRemaining == 0 && !_uiState.value.isSubmitted) {
                 Log.d(TAG, "Time's up! Auto-submitting quiz")
-                submitQuiz()
+                // Mengirim userId yang sesuai saat auto-submit, atau fallback
+                submitQuiz(_uiState.value.currentUserId ?: "guestUser")
             }
         }
     }
 
-    /**
-     * Pilih jawaban untuk pertanyaan saat ini
-     */
+    // --- [PERUBAHAN 1: Cara Memilih Jawaban Diubah Total] ---
+    // Parameter diubah menjadi `answerIndex: Int` agar sesuai dengan UI Anda.
+    // Logika di dalamnya diubah untuk menyimpan jawaban dalam format yang benar: Map<QuestionID, AnswerText>
     fun selectAnswer(answerIndex: Int) {
-        val currentIndex = _uiState.value.currentQuestionIndex
-        _uiState.update { state ->
-            state.copy(
-                selectedAnswer = answerIndex,
-                userAnswers = state.userAnswers + (currentIndex to answerIndex)
+        val state = _uiState.value
+        // Pastikan kita tidak crash jika pertanyaan tidak ada
+        if (state.currentQuestionIndex >= state.questions.size) return
+
+        val currentQuestion: QuestionUi = state.questions[state.currentQuestionIndex]
+        val selectedAnswerText = currentQuestion.options[answerIndex]
+
+        _uiState.update {
+            it.copy(
+                userAnswers = it.userAnswers + (currentQuestion.id to selectedAnswerText)
             )
         }
-        Log.d(TAG, "Answer selected: question $currentIndex -> answer $answerIndex")
+        Log.d(TAG, "Answer selected for question ${currentQuestion.id} -> $selectedAnswerText")
     }
 
-    /**
-     * Navigasi ke pertanyaan sebelumnya
-     */
+
+    // Fungsi previousQuestion & nextQuestion tidak perlu diubah secara logika,
+    // tapi kita hapus `selectedAnswer` karena state itu tidak lagi relevan.
     fun previousQuestion() {
-        val currentState = _uiState.value
-        if (currentState.currentQuestionIndex > 0) {
-            val prevIndex = currentState.currentQuestionIndex - 1
-            val prevAnswer = currentState.userAnswers[prevIndex]
-
-            _uiState.update {
-                it.copy(
-                    currentQuestionIndex = prevIndex,
-                    selectedAnswer = prevAnswer
-                )
-            }
-            Log.d(TAG, "Moved to previous question: $prevIndex")
+        if (_uiState.value.currentQuestionIndex > 0) {
+            _uiState.update { it.copy(currentQuestionIndex = it.currentQuestionIndex - 1) }
         }
     }
 
-    /**
-     * Navigasi ke pertanyaan berikutnya
-     */
     fun nextQuestion() {
-        val currentState = _uiState.value
-        if (currentState.currentQuestionIndex < currentState.questions.size - 1) {
-            val nextIndex = currentState.currentQuestionIndex + 1
-            val nextAnswer = currentState.userAnswers[nextIndex]
-
-            _uiState.update {
-                it.copy(
-                    currentQuestionIndex = nextIndex,
-                    selectedAnswer = nextAnswer
-                )
-            }
-            Log.d(TAG, "Moved to next question: $nextIndex")
+        if (_uiState.value.currentQuestionIndex < _uiState.value.questions.size - 1) {
+            _uiState.update { it.copy(currentQuestionIndex = it.currentQuestionIndex + 1) }
         }
     }
 
-    /**
-     * Submit quiz dan hitung score
-     */
+    // --- [PERUBAHAN 2: Fungsi submitQuiz Dirombak Total] ---
+    // Semua logika perhitungan skor DIHAPUS dari ViewModel.
+    // Fungsi ini sekarang hanya mengirimkan jawaban ke Repository.
     fun submitQuiz(
-        userId: String? = null,
-        onComplete: (Int, Int) -> Unit = { _, _ -> }
+        userId: String?,
+        onComplete: () -> Unit = { } // Callback disederhanakan, tidak lagi mengirim skor.
     ) {
+        // Ambil ID pengguna dari state jika tidak disediakan
+        val finalUserId = userId ?: _uiState.value.currentUserId
+        if (finalUserId == null) {
+            Log.e(TAG, "Cannot submit quiz, userId is null.")
+            _uiState.update { it.copy(error = "User ID tidak ditemukan, tidak bisa submit.") }
+            return
+        }
+
         viewModelScope.launch {
             try {
                 timerJob?.cancel()
-
                 val state = _uiState.value
+                val quizId = state.quiz?.id
 
-                // Hitung jumlah jawaban benar
-                var correctAnswers = 0
-                state.questions.forEachIndexed { index, question ->
-                    val userAnswer = state.userAnswers[index]
-                    if (userAnswer == question.correctAnswerIndex) {
-                        correctAnswers++
-                    }
+                if (quizId == null) {
+                    _uiState.update { it.copy(error = "Quiz ID is missing, cannot submit.") }
+                    return@launch
                 }
 
-                val totalQuestions = state.questions.size
-                val scorePercent = (correctAnswers * 100) / totalQuestions
+                // TIDAK ADA LAGI PERHITUNGAN SKOR DI SINI.
+                Log.d(TAG, "Submitting quiz '$quizId' for user '$finalUserId' with answers: ${state.userAnswers}")
 
-                // Hitung poin berdasarkan persentase
-                val points = when {
-                    scorePercent == 100 -> 10
-                    scorePercent in 90..99 -> 9
-                    scorePercent in 80..89 -> 8
-                    scorePercent in 70..79 -> 7
-                    scorePercent in 60..69 -> 6
-                    scorePercent in 50..59 -> 5
-                    scorePercent in 40..49 -> 4
-                    scorePercent in 30..39 -> 3
-                    scorePercent in 20..29 -> 2
-                    else -> 1
-                }
-
-                Log.d(
-                    TAG,
-                    "Quiz submitted: $correctAnswers/$totalQuestions correct, " +
-                            "score: $scorePercent, points: $points"
+                // Panggil repository dengan format yang BENAR.
+                repository.submitQuizResult(
+                    userId = finalUserId,
+                    quizId = quizId,
+                    userAnswers = state.userAnswers // Kirim Map jawaban pengguna
                 )
 
-                // Simpan hasil ke Firestore
-                state.quiz?.let { quiz ->
-                    val finalUserId = userId ?: "guestUser"
-                    repository.submitQuizResult(
-                        userId = finalUserId,
-                        quizId = quiz.id,
-                        score = points,              // <- sekarang yang dikirim adalah POINTS
-                        totalQuestions = totalQuestions
-                    )
-                }
-
-                // Update state untuk UI (scorePercent dipakai di layar hasil)
+                // Update UI untuk menandakan kuis telah selesai.
                 _uiState.update {
                     it.copy(
                         isSubmitted = true,
-                        score = scorePercent
+                        // Skor tidak lagi dihitung di sini, jadi kita tidak tahu nilainya.
+                        // Layar hasil harus mengambil skor terbaru dari `quizResults` di Firestore.
+                        score = 0
                     )
                 }
 
-                // Callback dengan hasil
-                onComplete(correctAnswers, totalQuestions)
+                Log.d(TAG, "Quiz submission request sent to repository successfully.")
+                onComplete() // Panggil callback untuk navigasi
 
             } catch (e: Exception) {
                 Log.e(TAG, "Error submitting quiz", e)
-                _uiState.update {
-                    it.copy(error = "Failed to submit quiz: ${e.message}")
-                }
+                _uiState.update { it.copy(error = "Failed to submit quiz: ${e.message}") }
             }
         }
     }
 
-    /**
-     * Reset quiz (untuk retry)
-     */
+    // Fungsi resetQuiz dan onCleared tidak perlu diubah.
     fun resetQuiz() {
-        _uiState.update {
-            QuizUiState()
-        }
+        _uiState.update { QuizUiState() }
         timerJob?.cancel()
     }
 

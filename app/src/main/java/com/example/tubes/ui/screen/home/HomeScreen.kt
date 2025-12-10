@@ -17,6 +17,8 @@ import androidx.compose.material.icons.outlined.GridView
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -59,6 +61,19 @@ fun HomeScreen(
     onTopAuthorsSeeAll: () -> Unit
 ) {
     var selectedTab by remember { mutableStateOf(BottomTab.Home) }
+
+    // --- BLOK PERBAIKAN DIMULAI ---
+    // LaunchedEffect akan berjalan setiap kali `selectedTab` berubah,
+    // lalu memanggil fungsi navigasi yang sesuai.
+    LaunchedEffect(selectedTab) {
+        when (selectedTab) {
+            BottomTab.Home -> onHome()
+            BottomTab.Quizzes -> onQuizzes()
+            BottomTab.Leaderboard -> onLeaderboard()
+            BottomTab.Profile -> onProfile()
+        }
+    }
+    // --- BLOK PERBAIKAN SELESAI ---
 
     Box(Modifier.fillMaxSize()) {
 

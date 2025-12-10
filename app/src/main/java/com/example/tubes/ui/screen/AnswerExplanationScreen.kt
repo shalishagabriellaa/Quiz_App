@@ -83,7 +83,9 @@ fun AnswerExplanationScreen(
     val currentQuestion = questions[currentQuestionIndex]
     val options = currentQuestion.options
     val correctAnswerIndex = currentQuestion.correctAnswerIndex
-    val userAnswerIndex = uiState.userAnswers[currentQuestionIndex]  // ⬅️ history jawaban user
+    val userAnswerText = uiState.userAnswers[currentQuestion.id]
+// Cari tahu indeks dari teks jawaban tersebut di dalam daftar opsi
+    val userAnswerIndex = options.indexOf(userAnswerText)
 
     val isExpanded = expandedQuestions.contains(currentQuestionIndex)
 

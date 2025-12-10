@@ -9,19 +9,31 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.navigation.NavHostController
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.tubes.data.AuthState
 import com.example.tubes.ui.teacher.TeacherDashboard
 import com.example.tubes.ui.teacher.components.TeacherBottomNavigation
+import com.example.tubes.viewmodel.AuthViewModel
 
 @Composable
-fun TeacherAppNavigation() {
+fun TeacherAppNavigation(
+    authViewModel: AuthViewModel = viewModel()
+) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route ?: "dashboard"
+
+    val authState by authViewModel.authState.collectAsState()
+
+    val authorId = if (authState is AuthState.Success) {
+        (authState as AuthState.Success).userId
+    } else {
+        null
+    }
 
     Scaffold(
         bottomBar = {
@@ -42,10 +54,13 @@ fun TeacherAppNavigation() {
         NavHost(
             navController = navController,
             startDestination = "dashboard",
-            modifier = Modifier.padding(paddingValues)
+            modifier = Modifier
+                .padding(paddingValues)
+                .fillMaxSize()
+
         ) {
             composable("dashboard") {
-                TeacherDashboard()
+                TeacherDashboard(authorId = authorId)
             }
             composable("quizzes") {
                 PlaceholderScreen("Quizzes")
@@ -63,6 +78,7 @@ fun TeacherAppNavigation() {
     }
 }
 
+// Composable Placeholder tidak perlu diubah
 @Composable
 fun PlaceholderScreen(title: String) {
     Box(
@@ -71,7 +87,7 @@ fun PlaceholderScreen(title: String) {
     ) {
         Text(
             text = "$title Screen",
-            color = Color.White
+            color = Color.Black
         )
     }
 }

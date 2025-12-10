@@ -23,9 +23,6 @@ import android.util.Log
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.graphics.Color
-import com.example.tubes.ui.screen.profile.ProfileScreen
-import com.example.tubes.ui.screen.setting.SettingScreen
-
 import com.example.tubes.data.cloudinary.CloudinaryManager
 import com.google.firebase.FirebaseApp
 import com.google.firebase.firestore.FirebaseFirestore
@@ -35,8 +32,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             MaterialTheme {
-                Surface(color = Color.White) {
-                    SettingScreen()
+                AppNavigation()
                 }
             }
         }

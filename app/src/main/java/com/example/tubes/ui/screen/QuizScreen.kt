@@ -10,6 +10,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -21,32 +22,30 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.tubes.data.model.QuestionUi
-import com.example.tubes.data.repository.QuizRepositoryImpl
 import com.example.tubes.viewmodel.QuizViewModel
-import androidx.compose.material.icons.filled.ArrowForward
 
 @Composable
 fun QuizScreen(
     quizId: String,
     viewModel: QuizViewModel,
-    onBackClick: () -> Unit = {},
-    onQuizComplete: (score: Int, total: Int) -> Unit = { _, _ -> },
-    onViewExplanation: (quizId: String) -> Unit = {},
-    userId: String? = null
+    onBackClick: () -> Unit,
+    // Callback disederhanakan: hanya memberitahu "kuis selesai"
+    onQuizComplete: () -> Unit,
+    onViewExplanation: (quizId: String) -> Unit,
+    userId: String?
 ) {
 
     val uiState by viewModel.uiState.collectAsState()
 
-    // Load quiz on first composition / when quizId changes
+    // Muat kuis saat pertama kali layar dibuat atau saat quizId berubah
     LaunchedEffect(quizId) {
+        // Pemanggilan setCurrentUserId() dihapus karena tidak lagi diperlukan.
+        // userId akan dikirim langsung saat submit.
         viewModel.loadQuiz(quizId)
     }
 
-    // Loading state
+    // --- Bagian Loading & Error (Tidak ada perubahan) ---
     if (uiState.isLoading) {
         Box(
             modifier = Modifier
@@ -70,7 +69,6 @@ fun QuizScreen(
         return
     }
 
-    // Error state
     if (uiState.error != null) {
         Box(
             modifier = Modifier
@@ -82,10 +80,7 @@ fun QuizScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.padding(24.dp)
             ) {
-                Text(
-                    text = "⚠️",
-                    fontSize = 48.sp
-                )
+                Text(text = "⚠️", fontSize = 48.sp)
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
                     text = uiState.error ?: "Unknown error",
@@ -96,9 +91,7 @@ fun QuizScreen(
                 Spacer(modifier = Modifier.height(24.dp))
                 Button(
                     onClick = onBackClick,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF2196F3)
-                    )
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2196F3))
                 ) {
                     Text("Back")
                 }
@@ -107,30 +100,23 @@ fun QuizScreen(
         return
     }
 
-    // Submitted state → show result screen
+    // --- Layar Hasil (Setelah Kuis Disubmit) ---
     if (uiState.isSubmitted) {
-        val correctAnswers = uiState.userAnswers.count { (index, answer) ->
-            uiState.questions.getOrNull(index)?.correctAnswerIndex == answer
-        }
-
+        // Layar hasil disederhanakan karena ViewModel tidak lagi menghitung skor.
         QuizResultScreen(
             quizId = quizId,
-            score = uiState.score, // this is percentage
-            correctAnswers = correctAnswers,
-            totalQuestions = uiState.questions.size,
             onBackClick = onBackClick,
             onRetry = {
+                // Reset state dan muat ulang kuis untuk mencoba lagi.
                 viewModel.resetQuiz()
                 viewModel.loadQuiz(quizId)
             },
-            onViewExplanation = {
-                onViewExplanation(quizId)
-            }
+            onViewExplanation = { onViewExplanation(quizId) }
         )
         return
     }
 
-    // Main Quiz Screen
+    // --- Layar Kuis Utama ---
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -152,9 +138,7 @@ fun QuizScreen(
             // Progress Bar
             if (uiState.questions.isNotEmpty()) {
                 LinearProgressIndicator(
-                    progress = {
-                        (uiState.currentQuestionIndex + 1).toFloat() / uiState.questions.size
-                    },
+                    progress = { (uiState.currentQuestionIndex + 1).toFloat() / uiState.questions.size },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 24.dp, vertical = 16.dp)
@@ -165,12 +149,21 @@ fun QuizScreen(
                 )
             }
 
-            // Question Card
-            if (uiState.questions.isNotEmpty()) {
+            // Kartu Pertanyaan
+            // Kartu Pertanyaan
+            // Kartu Pertanyaan
+            if (uiState.questions.isNotEmpty() && uiState.currentQuestionIndex < uiState.questions.size) {
+                val currentQuestion = uiState.questions[uiState.currentQuestionIndex]
+
+                // --- PERBAIKAN DI SINI ---    // Dapatkan jawaban yang dipilih dari map (bisa jadi null)
+                val selectedAnswer = uiState.userAnswers[currentQuestion.id]
+                // Cari indeks dari jawaban tersebut. Jika 'selectedAnswer' adalah null, indexOf akan aman dan mengembalikan -1.
+                val answerIndex = currentQuestion.options.indexOf(selectedAnswer)
+
                 QuestionCard(
-                    question = uiState.questions[uiState.currentQuestionIndex],
-                    selectedAnswer = uiState.selectedAnswer,
-                    onAnswerSelected = { viewModel.selectAnswer(it) },
+                    question = currentQuestion,
+                    selectedAnswerIndex = answerIndex, // Gunakan hasil yang sudah aman (answerIndex)
+                    onAnswerSelected = { newAnswerIndex -> viewModel.selectAnswer(newAnswerIndex) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f)
@@ -178,65 +171,50 @@ fun QuizScreen(
                 )
             }
 
-            // Navigation Buttons
+
+            // Tombol Navigasi
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(24.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // Back button (to previous question)
+                // Tombol Back (pertanyaan sebelumnya)
                 if (uiState.currentQuestionIndex > 0) {
                     Button(
                         onClick = { viewModel.previousQuestion() },
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(56.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF2196F3),
-                            contentColor = Color.White
-                        ),
+                        modifier = Modifier.weight(1f).height(56.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2196F3), contentColor = Color.White),
                         shape = RoundedCornerShape(28.dp)
                     ) {
-                        Text(
-                            text = "Back",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold
-                        )
+                        Text("Back", fontSize = 18.sp, fontWeight = FontWeight.Bold)
                     }
+                } else {
+                    Spacer(modifier = Modifier.weight(1f))
                 }
 
-                // Next / Submit button
+                // Tombol Next / Submit
                 Button(
                     onClick = {
                         if (uiState.currentQuestionIndex == uiState.questions.size - 1) {
-                            // Last question → submit quiz
-                            viewModel.submitQuiz(userId = userId ?: "guestUser") { correct, total ->
-                                onQuizComplete(correct, total)
-                            }
+                            // Panggil submitQuiz dengan cara yang sudah benar
+                            viewModel.submitQuiz(
+                                userId = userId,
+                                onComplete = onQuizComplete // Gunakan callback yang sudah disederhanakan
+                            )
                         } else {
-                            // Move to next question
                             viewModel.nextQuestion()
                         }
                     },
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(56.dp),
+                    modifier = Modifier.weight(1f).height(56.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor =
-                            if (uiState.currentQuestionIndex == uiState.questions.size - 1)
-                                Color(0xFF4CAF50)
-                            else
-                                Color(0xFFFF6B9D),
+                        containerColor = if (uiState.currentQuestionIndex == uiState.questions.size - 1) Color(0xFF4CAF50) else Color(0xFFFF6B9D),
                         contentColor = Color.White
                     ),
                     shape = RoundedCornerShape(28.dp)
                 ) {
                     Text(
-                        text = if (uiState.currentQuestionIndex == uiState.questions.size - 1)
-                            "Submit"
-                        else
-                            "Next",
+                        text = if (uiState.currentQuestionIndex == uiState.questions.size - 1) "Submit" else "Next",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -245,6 +223,8 @@ fun QuizScreen(
         }
     }
 }
+
+// --- Composable lainnya tidak perlu diubah, tapi disertakan agar lengkap ---
 
 @Composable
 fun QuizTopBar(
@@ -260,29 +240,18 @@ fun QuizTopBar(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Back Button
         IconButton(
             onClick = onBackClick,
-            modifier = Modifier
-                .size(48.dp)
-                .background(Color(0xFF3949AB), CircleShape)
+            modifier = Modifier.size(48.dp).background(Color(0xFF3949AB), CircleShape)
         ) {
-            Icon(
-                imageVector = Icons.Default.ArrowBack,
-                contentDescription = "Back",
-                tint = Color.White
-            )
+            Icon(Icons.Default.ArrowBack, "Back", tint = Color.White)
         }
-
-        // Question Counter
         Text(
             text = "%02d of %02d".format(currentQuestion, totalQuestions),
             color = Color.White,
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold
         )
-
-        // Timer
         Row(
             modifier = Modifier
                 .background(
@@ -290,15 +259,9 @@ fun QuizTopBar(
                     RoundedCornerShape(20.dp)
                 )
                 .padding(horizontal = 12.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = Icons.Default.Timer,
-                contentDescription = "Timer",
-                tint = Color.White,
-                modifier = Modifier.size(20.dp)
-            )
+            Icon(Icons.Default.Timer, "Timer", tint = Color.White, modifier = Modifier.size(20.dp))
             Spacer(modifier = Modifier.width(4.dp))
             Text(
                 text = "%02d:%02d".format(timeRemaining / 60, timeRemaining % 60),
@@ -313,7 +276,7 @@ fun QuizTopBar(
 @Composable
 fun QuestionCard(
     question: QuestionUi,
-    selectedAnswer: Int?,
+    selectedAnswerIndex: Int,
     onAnswerSelected: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -322,41 +285,21 @@ fun QuestionCard(
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
-        val scrollState = rememberScrollState()
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(24.dp)
-                .verticalScroll(scrollState)
+                .verticalScroll(rememberScrollState())
         ) {
-            // Category
-            Text(
-                text = question.category,
-                color = Color.Gray,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium
-            )
-
+            Text(question.category, color = Color.Gray, fontSize = 14.sp, fontWeight = FontWeight.Medium)
             Spacer(modifier = Modifier.height(12.dp))
-
-            // Question text
-            Text(
-                text = question.question,
-                color = Color.Black,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                lineHeight = 28.sp
-            )
-
+            Text(question.question, color = Color.Black, fontSize = 20.sp, fontWeight = FontWeight.Bold, lineHeight = 28.sp)
             Spacer(modifier = Modifier.height(24.dp))
-
-            // Options
             question.options.forEachIndexed { index, option ->
                 OptionItem(
                     option = option,
                     optionLabel = "${'A' + index}.",
-                    isSelected = selectedAnswer == index,
+                    isSelected = selectedAnswerIndex == index,
                     onClick = { onAnswerSelected(index) }
                 )
                 Spacer(modifier = Modifier.height(12.dp))
@@ -374,29 +317,17 @@ fun OptionItem(
 ) {
     val selectedColor = Color(0xFF0D47A1)
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isSelected)
-                selectedColor.copy(alpha = 0.15f)
-            else
-                Color(0xFFF5F5F5)
-        ),
+        colors = CardDefaults.cardColors(containerColor = if (isSelected) selectedColor.copy(alpha = 0.15f) else Color(0xFFF5F5F5)),
         border = if (isSelected) BorderStroke(2.dp, selectedColor) else null
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Row(
-                modifier = Modifier.weight(1f),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+            Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = optionLabel,
                     color = if (isSelected) selectedColor else Color.Gray,
@@ -406,19 +337,19 @@ fun OptionItem(
                 )
                 Text(
                     text = option,
-                    color = if (isSelected) selectedColor else Color.DarkGray,
-                    fontSize = 16.sp
+                    color = if (isSelected) Color.DarkGray else Color.Black,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium
                 )
             }
-
-            RadioButton(
-                selected = isSelected,
-                onClick = onClick,
-                colors = RadioButtonDefaults.colors(
-                    selectedColor = selectedColor,
-                    unselectedColor = Color.Gray
+            if (isSelected) {
+                Icon(
+                    imageVector = Icons.Default.CheckCircle,
+                    contentDescription = "Selected",
+                    tint = selectedColor,
+                    modifier = Modifier.size(24.dp)
                 )
-            )
+            }
         }
     }
 }
@@ -426,158 +357,52 @@ fun OptionItem(
 @Composable
 fun QuizResultScreen(
     quizId: String,
-    score: Int,              // percentage (0–100)
-    correctAnswers: Int,
-    totalQuestions: Int,
     onBackClick: () -> Unit,
     onRetry: () -> Unit,
     onViewExplanation: () -> Unit
 ) {
-    val incorrectAnswers = totalQuestions - correctAnswers
-
-    val (icon, message) = when {
-        score in 90..100 -> "🔥" to "Excellent! You nailed it!"
-        score in 80..89 -> "🌟" to "Great job! Almost perfect!"
-        score in 70..79 -> "👍" to "Good work! Keep improving!"
-        score in 60..69 -> "✨" to "Not bad! You're getting there!"
-        else -> "💛" to "Don't give up! Try again—you can do it!"
-    }
-
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFF1A237E))
+        modifier = Modifier.fillMaxSize().background(Color(0xFF1A237E)),
+        contentAlignment = Alignment.Center
     ) {
-        // Card utama di tengah
         Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 48.dp)
-                .align(Alignment.Center),
+            modifier = Modifier.fillMaxWidth().padding(24.dp),
             shape = RoundedCornerShape(24.dp),
             colors = CardDefaults.cardColors(containerColor = Color.White)
         ) {
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(32.dp),
+                modifier = Modifier.padding(32.dp).fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Dynamic icon
-                Text(
-                    text = icon,
-                    fontSize = 64.sp
-                )
-
+                Text(text = "✅", fontSize = 64.sp)
                 Spacer(modifier = Modifier.height(16.dp))
-
                 Text(
-                    text = "Quiz Finished!",
+                    text = "Quiz Submitted!",
                     fontSize = 28.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF1A237E)
                 )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // Dynamic message
+                Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = message,
-                    fontSize = 16.sp,
-                    color = Color.Gray,
-                    textAlign = TextAlign.Center
-                )
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Text(
-                    text = "Your Score",
-                    fontSize = 16.sp,
+                    text = "Your results will be updated on your profile shortly.",
+                    textAlign = TextAlign.Center,
                     color = Color.Gray
                 )
-
-                Text(
-                    text = "$score%",
-                    fontSize = 64.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF4CAF50)
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Text(
-                    text = "Correct: $correctAnswers",
-                    fontSize = 18.sp,
-                    color = Color(0xFF2E7D32)
-                )
-
-                Text(
-                    text = "Incorrect: $incorrectAnswers",
-                    fontSize = 18.sp,
-                    color = Color(0xFFC62828)
-                )
-
                 Spacer(modifier = Modifier.height(32.dp))
-
-                // Try Again button
                 Button(
-                    onClick = onRetry,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF2196F3)
-                    ),
-                    shape = RoundedCornerShape(28.dp)
-                ) {
-                    Text(
-                        text = "Try Again",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // Back button
-                OutlinedButton(
                     onClick = onBackClick,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
-                    shape = RoundedCornerShape(28.dp),
-                    border = BorderStroke(2.dp, Color(0xFF2196F3))
+                    modifier = Modifier.fillMaxWidth().height(50.dp)
                 ) {
-                    Text(
-                        text = "Back",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF2196F3)
-                    )
+                    Text("Back to Home")
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedButton(
+                    onClick = onRetry,
+                    modifier = Modifier.fillMaxWidth().height(50.dp)
+                ) {
+                    Text("Try Again")
                 }
             }
-        }
-
-        // Tombol "View Explanations" di luar card, bawah kanan
-        Row(
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(24.dp)
-                .clickable { onViewExplanation() },
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "View Explanations",
-                color = Color.White,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.SemiBold
-            )
-            Spacer(modifier = Modifier.width(4.dp))
-            Icon(
-                imageVector = Icons.Default.ArrowForward,
-                contentDescription = "View explanations",
-                tint = Color.White
-            )
         }
     }
 }

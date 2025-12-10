@@ -42,11 +42,12 @@ data class QuizUiState(
     val currentQuestionIndex: Int = 0,
     val timeRemaining: Int = 0,
     val selectedAnswer: Int? = null,
-    val userAnswers: Map<Int, Int> = emptyMap(), // questionIndex -> answerIndex
+    val userAnswers: Map<String, String> = emptyMap(),
     val isLoading: Boolean = true,
     val error: String? = null,
     val isSubmitted: Boolean = false,
-    val score: Int = 0
+    val score: Int = 0,
+    val currentUserId: String? = null
 )
 
 fun String.toAnswerIndex(): Int {
