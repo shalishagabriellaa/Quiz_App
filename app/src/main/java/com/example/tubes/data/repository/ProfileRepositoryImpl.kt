@@ -12,13 +12,17 @@ class ProfileRepositoryImpl : ProfileRepository {
     private val db = FirebaseFirestore.getInstance()
 
     override suspend fun getUserProfile(): User {
-        val userId = auth.currentUser?.uid ?: throw Exception("User tidak login atau tidak ditemukan.")
+        val uid = auth.currentUser?.uid
+            ?: throw Exception("User tidak login atau tidak ditemukan")
 
         try {
-            val document = db.collection("users").document(userId).get().await()
+            val document = db.collection("users")
+                .document(uid)
+                .get()
+                .await()
 
             return document.toObject(User::class.java)
-                ?: throw Exception("Dokumen user tidak ada atau formatnya salah.")
+                ?: throw Exception("Dokumen user tidak ada atau format salah")
 
         } catch (e: Exception) {
             throw Exception("Gagal mengambil data profil: ${e.message}")

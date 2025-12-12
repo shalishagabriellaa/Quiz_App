@@ -32,6 +32,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.windowInsetsPadding
+
 /* =========================
    PUBLIC API
    ========================= */
@@ -44,71 +48,67 @@ enum class BottomTab(val label: String) {
 fun QuizBottomBar(
     selected: BottomTab,
     onSelected: (BottomTab) -> Unit,
-    onQrClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    // Bar container (rounded top)
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(100.dp)
+            // JANGAN clip container-nya
+            .background(BarPurple)
+            .shadow(
+                elevation = 12.dp,
+                shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+                clip = false
+            )
+            .background(
+                color = BarPurple,
+                shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+            )
+            .windowInsetsPadding(WindowInsets.navigationBars)
+            .height(86.dp)
+            .padding(horizontal = 20.dp)
     ) {
-        // Bar container (rounded top)
+        Row(
+            modifier = Modifier.fillMaxSize(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            BarItem(
+                text = BottomTab.Home.label,
+                icon = Icons.Filled.Home,
+                selected = selected == BottomTab.Home
+            ) { onSelected(BottomTab.Home) }
+
+            BarItem(
+                text = BottomTab.Quizzes.label,
+                icon = Icons.Outlined.GridView,
+                selected = selected == BottomTab.Quizzes
+            ) { onSelected(BottomTab.Quizzes) }
+
+            Spacer(Modifier.width(64.dp)) // ruang QR
+
+            BarItem(
+                text = BottomTab.Leaderboard.label,
+                icon = Icons.Filled.Leaderboard,
+                selected = selected == BottomTab.Leaderboard
+            ) { onSelected(BottomTab.Leaderboard) }
+
+            BarItem(
+                text = BottomTab.Profile.label,
+                icon = Icons.Filled.Person,
+                selected = selected == BottomTab.Profile
+            ) { onSelected(BottomTab.Profile) }
+        }
+
+        // garis putih bawah
         Box(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                .height(86.dp)
-                .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
-                .background(BarPurple)
-                .padding(horizontal = 20.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxSize(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                BarItem(
-                    text = BottomTab.Home.label,
-                    icon = Icons.Filled.Home,
-                    selected = selected == BottomTab.Home
-                ) { onSelected(BottomTab.Home) }
-
-                BarItem(
-                    text = BottomTab.Quizzes.label,
-                    icon = Icons.Outlined.GridView,
-                    selected = selected == BottomTab.Quizzes
-                ) { onSelected(BottomTab.Quizzes) }
-
-                Spacer(Modifier.width(64.dp)) // ruang tombol QR di tengah
-
-                BarItem(
-                    text = BottomTab.Leaderboard.label,
-                    icon = Icons.Filled.Leaderboard,
-                    selected = selected == BottomTab.Leaderboard
-                ) { onSelected(BottomTab.Leaderboard) }
-
-                BarItem(
-                    text = BottomTab.Profile.label,
-                    icon = Icons.Filled.Person,
-                    selected = selected == BottomTab.Profile
-                ) { onSelected(BottomTab.Profile) }
-            }
-
-            // "home indicator" putih (garis kecil) di bawah
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .offset(y = (-8).dp)
-                    .size(width = 120.dp, height = 6.dp)
-                    .clip(RoundedCornerShape(50))
-                    .background(Color.White.copy(alpha = 0.95f))
-            )
-        }
-
-        // Tombol QR mengambang di tengah (dengan border & lift saat ditekan)
-        QrCenterButton(
-            modifier = Modifier.align(Alignment.TopCenter),
-            onClick = onQrClick
+                .offset(y = (-8).dp)
+                .size(width = 120.dp, height = 6.dp)
+                .clip(RoundedCornerShape(50))
+                .background(Color.White.copy(alpha = 0.95f))
         )
     }
 }
@@ -124,7 +124,7 @@ private fun BarItem(
     selected: Boolean,
     onClick: () -> Unit
 ) {
-    // Animasi “naik” & ukuran lingkaran aktif
+    // Animasi "naik" & ukuran lingkaran aktif
     val lift by animateDpAsState(
         targetValue = if (selected) 35.dp else 0.dp,
         animationSpec = spring(stiffness = Spring.StiffnessMediumLow)
@@ -148,7 +148,7 @@ private fun BarItem(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .widthIn(min = 70.dp)
-            .offset(y = -lift) // ← efek “ikon naik”
+            .offset(y = -lift) // ← efek "ikon naik"
             .clickable { onClick() }
     ) {
         if (selected) {
@@ -187,7 +187,7 @@ private fun QrCenterButton(
     modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
-    // Animasi “naik” saat ditekan (press state)
+    // Animasi "naik" saat ditekan (press state)
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
     val lift by animateDpAsState(

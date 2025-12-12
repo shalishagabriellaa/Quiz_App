@@ -117,13 +117,7 @@ fun HomeScreen(
 
             item { Spacer(Modifier.height(24.dp)) }
         }
-
-        HomeBottomNav(
-            selected = selectedTab,
-            onSelected = { selectedTab = it },
-            onQrClick = onQR,
-            modifier = Modifier.align(Alignment.BottomCenter)
-        )
+        
     }
 }
 
