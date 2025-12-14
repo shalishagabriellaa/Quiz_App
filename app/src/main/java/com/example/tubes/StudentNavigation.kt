@@ -35,10 +35,10 @@ import com.example.tubes.ui.screen.home.components.QuizBottomBar
 import com.example.tubes.ui.screen.home.models.toAuthorUi
 import com.example.tubes.ui.screen.leaderboard.LeaderboardScreen
 import com.example.tubes.ui.screen.profile.ProfileScreen
+import com.example.tubes.ui.screen.profile.FollowersScreen
+import com.example.tubes.ui.screen.profile.FollowingScreen
 import com.example.tubes.ui.screen.quizzes.YourQuizzesScreen
 import com.example.tubes.viewmodel.*
-import com.example.tubes.viewmodel.LeaderboardViewModel
-import com.example.tubes.viewmodel.YourQuizzesViewModel
 
 @Composable
 fun StudentNavigation() {
@@ -86,7 +86,6 @@ fun StudentNavigation() {
         }
     )
 
-    // 🔥 NEW: LeaderboardViewModel pakai HomeRepository yang sama
     val leaderboardViewModel: LeaderboardViewModel = viewModel(
         factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -96,7 +95,6 @@ fun StudentNavigation() {
         }
     )
 
-    // 🔥 NEW: YourQuizzesViewModel (untuk layar YourQuizzesScreen)
     val yourQuizzesViewModel: YourQuizzesViewModel = viewModel(
         factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -106,7 +104,26 @@ fun StudentNavigation() {
         }
     )
 
-    // startDestination pakai “splash” supaya authState kebaca dulu
+    // 🆕 ViewModels untuk Followers & Following
+    val followersViewModel: FollowersViewModel = viewModel(
+        factory = object : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                @Suppress("UNCHECKED_CAST")
+                return FollowersViewModel(profileRepository) as T
+            }
+        }
+    )
+
+    val followingViewModel: FollowingViewModel = viewModel(
+        factory = object : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                @Suppress("UNCHECKED_CAST")
+                return FollowingViewModel(profileRepository) as T
+            }
+        }
+    )
+
+    // startDestination pakai "splash" supaya authState kebaca dulu
     NavHost(
         navController = navController,
         startDestination = "splash"
@@ -229,6 +246,47 @@ fun StudentNavigation() {
             TopAuthorsScreen(
                 authors = state.topAuthors.map { it.toAuthorUi() },
                 onBackClick = { navController.popBackStack() }
+            )
+        }
+
+        // 🆕 ===== FOLLOWERS SCREEN =====
+        composable("followers/{userId}") { backStackEntry ->
+            val userId = backStackEntry.arguments?.getString("userId") ?: ""
+            FollowersScreen(
+                userId = userId,
+                onBackClick = { navController.popBackStack() },
+                onUserClick = { targetUserId ->
+                    // TODO: Navigate to user profile if needed
+                    // navController.navigate("userProfile/$targetUserId")
+                },
+                viewModel = followersViewModel
+            )
+        }
+
+        // 🆕 ===== FOLLOWING SCREEN =====
+        composable("following/{userId}") { backStackEntry ->
+            val userId = backStackEntry.arguments?.getString("userId") ?: ""
+            FollowingScreen(
+                userId = userId,
+                onBackClick = { navController.popBackStack() },
+                onUserClick = { targetUserId ->
+                    // TODO: Navigate to user profile if needed
+                    // navController.navigate("userProfile/$targetUserId")
+                },
+                viewModel = followingViewModel
+            )
+        }
+
+        // 🆕 ===== QUIZ HISTORY SCREEN (from Profile) =====
+        composable("quizHistory/{userId}") { backStackEntry ->
+            val userId = backStackEntry.arguments?.getString("userId") ?: ""
+            YourQuizzesScreen(
+                userId = userId,
+                onBackClick = { navController.popBackStack() },
+                onResultClick = { quizId ->
+                    navController.navigate("testInfo/$quizId")
+                },
+                viewModel = yourQuizzesViewModel
             )
         }
 
@@ -375,7 +433,6 @@ private fun MainScreenWithBottomNav(
                         }
                     }
 
-                    // 🔥 TAB "QUIZZES" – pakai YourQuizzesScreen yang kamu mau
                     composable("quizzes") {
                         val authState by authViewModel.authState.collectAsState()
                         val userId = (authState as? AuthState.Success)?.userId ?: ""
@@ -384,10 +441,11 @@ private fun MainScreenWithBottomNav(
                             userId = userId,
                             onBackClick = { bottomNavController.navigate("home") },
                             onResultClick = { quizId ->
-                                // sementara arahkan ke TestInformation / detail quiz
-                                navController.navigate("testInfo/$quizId")
+                                // 🔥 BUKAN lagi ke testInfo / QuizScreen,
+                                // tapi langsung ke screen pembahasan
+                                navController.navigate("answerExplanation/$quizId")
                             },
-                            viewModel = yourQuizzesViewModel
+                            viewModel = yourQuizzesViewModel  // pastikan ViewModel ini sudah kamu buat di atas
                         )
                     }
 
@@ -399,6 +457,9 @@ private fun MainScreenWithBottomNav(
                     }
 
                     composable("profile") {
+                        val authState by authViewModel.authState.collectAsState()
+                        val userId = (authState as? AuthState.Success)?.userId ?: ""
+
                         LaunchedEffect(Unit) {
                             profileViewModel.loadProfile()
                         }
@@ -414,6 +475,15 @@ private fun MainScreenWithBottomNav(
                             },
                             onNavigateToSettings = {
                                 navController.navigate(Screen.SettingScreen.route)
+                            },
+                            onNavigateToQuizHistory = {
+                                navController.navigate("quizHistory/$userId")
+                            },
+                            onNavigateToFollowers = {
+                                navController.navigate("followers/$userId")
+                            },
+                            onNavigateToFollowing = {
+                                navController.navigate("following/$userId")
                             }
                         )
                     }
@@ -508,10 +578,6 @@ private fun QrFab(
     }
 }
 
-/**
- * Placeholder overlay biar project kamu COMPILE.
- * Nanti kalau mau CameraX beneran, tinggal ganti isinya.
- */
 @Composable
 private fun QrScannerOverlay(
     onDismiss: () -> Unit,
@@ -529,7 +595,7 @@ private fun QrScannerOverlay(
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center   // ✅ perbaikan: bukan verticalAlignment
+                verticalArrangement = Arrangement.Center
             ) {
                 Text(
                     "QR Scanner",

@@ -3,7 +3,6 @@ package com.example.tubes.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.example.tubes.data.model.User
 import com.example.tubes.data.repository.ProfileRepositoryImpl
 import com.example.tubes.domain.repository.ProfileRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,6 +18,8 @@ data class ProfileUiState(
     val avatarUrl: String = "",
     val totalPoints: Int = 0,
     val quizzesCompleted: Int = 0,
+    val followersCount: Int = 0,
+    val followingCount: Int = 0,
     val rank: Int = 0,
     val error: String? = null
 )
@@ -33,6 +34,7 @@ class ProfileViewModel(private val repository: ProfileRepository) : ViewModel() 
 
             try {
                 val user = repository.getUserProfile()
+                val playsCount = repository.getQuizAttemptsCount(user.uid)
 
                 _uiState.update {
                     it.copy(
@@ -41,8 +43,10 @@ class ProfileViewModel(private val repository: ProfileRepository) : ViewModel() 
                         userEmail = user.email,
                         avatarUrl = user.avatarUrl.orEmpty(),
                         totalPoints = user.totalScore.toInt(),
-                        quizzesCompleted = 0,
-                        rank = 0
+                        quizzesCompleted = playsCount,
+                        followersCount = user.followers.size,
+                        followingCount = user.following.size,
+                        rank = 0 // TODO: Implement ranking logic if needed
                     )
                 }
             } catch (e: Exception) {
@@ -55,9 +59,35 @@ class ProfileViewModel(private val repository: ProfileRepository) : ViewModel() 
             }
         }
     }
+
+    fun followUser(targetUserId: String) {
+        viewModelScope.launch {
+            try {
+                repository.followUser(targetUserId)
+                loadProfile() // Refresh untuk update count
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(error = e.message)
+                }
+            }
+        }
+    }
+
+    fun unfollowUser(targetUserId: String) {
+        viewModelScope.launch {
+            try {
+                repository.unfollowUser(targetUserId)
+                loadProfile() // Refresh untuk update count
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(error = e.message)
+                }
+            }
+        }
+    }
 }
 
-    class ProfileViewModelFactory : ViewModelProvider.Factory {
+class ProfileViewModelFactory : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(ProfileViewModel::class.java)) {
             val repository = ProfileRepositoryImpl()

@@ -22,17 +22,24 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.tubes.viewmodel.ProfileViewModel
 
+// Colors
+private val DeepBlue = Color(0xFF0E1C6B)
+private val LightBackground = Color(0xFFF5F5F5)
+private val CardBackground = Color(0xFFFFFFFF)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
     viewModel: ProfileViewModel,
     onBackClick: () -> Unit = {},
     onLogout: () -> Unit = {},
-    onNavigateToSettings: () -> Unit = {}
+    onNavigateToSettings: () -> Unit = {},
+    onNavigateToQuizHistory: () -> Unit = {},
+    onNavigateToFollowers: () -> Unit = {},
+    onNavigateToFollowing: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    // Load sekali saat screen dibuka
     LaunchedEffect(Unit) {
         viewModel.loadProfile()
     }
@@ -40,23 +47,47 @@ fun ProfileScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = {
-                    Text("Profile", fontWeight = FontWeight.Bold, color = Color.White)
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
+                title = {},
+                navigationIcon = {},
+                actions = {
+                    // Edit Button di kanan atas
+                    Button(
+                        onClick = { /* TODO: Edit profile */ },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.White
+                        ),
+                        shape = RoundedCornerShape(20.dp),
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                        modifier = Modifier
+                            .height(36.dp)
+                            .padding(end = 8.dp)
+                    ) {
+                        Icon(
+                            Icons.Filled.Edit,
+                            contentDescription = "Edit",
+                            tint = DeepBlue,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(Modifier.width(4.dp))
+                        Text(
+                            "Edit",
+                            color = DeepBlue,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium
+                        )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = DeepBlue)
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = DeepBlue
+                )
             )
         }
-    ) { padding ->
+    ) { paddingValues ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(LightBackground)
-                .padding(padding)
+                .padding(paddingValues)
         ) {
             when {
                 uiState.isLoading -> {
@@ -80,125 +111,112 @@ fun ProfileScreen(
                 }
 
                 else -> {
-                    ProfileContent(
-                        userName = uiState.userName,
-                        userEmail = uiState.userEmail,
-                        avatarUrl = uiState.avatarUrl,
-                        totalPoints = uiState.totalPoints,
-                        quizzesCompleted = uiState.quizzesCompleted,
-                        rank = uiState.rank,
-                        onLogout = onLogout,
-                        onNavigateToSettings = onNavigateToSettings
-                    )
+                    Column(
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        // HEADER BIRU GELAP
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(DeepBlue)
+                        ) {
+                            ProfileHeader(
+                                userName = uiState.userName,
+                                userEmail = uiState.userEmail,
+                                avatarUrl = uiState.avatarUrl,
+                                followers = uiState.followersCount,
+                                following = uiState.followingCount,
+                                onFollowersClick = onNavigateToFollowers,
+                                onFollowingClick = onNavigateToFollowing
+                            )
+                        }
+
+                        // KONTEN PUTIH ROUNDED
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f)
+                                .background(LightBackground)
+                                .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            contentPadding = PaddingValues(
+                                top = 24.dp,
+                                start = 20.dp,
+                                end = 20.dp,
+                                bottom = 100.dp
+                            )
+                        ) {
+                            // Total Points Card (tanpa tombol View)
+                            item {
+                                TotalPointsCard(totalPoints = uiState.totalPoints)
+                            }
+
+                            item { Spacer(Modifier.height(24.dp)) }
+
+                            // Menu Items
+                            item {
+                                MenuItemCard(
+                                    icon = Icons.Filled.Settings,
+                                    title = "Settings",
+                                    onClick = onNavigateToSettings
+                                )
+                            }
+
+                            item { Spacer(Modifier.height(12.dp)) }
+
+                            item {
+                                MenuItemCard(
+                                    icon = Icons.Filled.History,
+                                    title = "View quiz history",
+                                    onClick = onNavigateToQuizHistory
+                                )
+                            }
+
+                            item { Spacer(Modifier.height(12.dp)) }
+
+                            item {
+                                MenuItemCard(
+                                    icon = Icons.Filled.Help,
+                                    title = "Help Center",
+                                    onClick = { /* TODO: Navigate to help */ }
+                                )
+                            }
+
+                            // Spacer sebelum logout
+                            item { Spacer(Modifier.height(32.dp)) }
+
+                            // Tombol Logout
+                            item {
+                                Button(
+                                    onClick = onLogout,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = Color(0xFFEF5350)
+                                    ),
+                                    shape = RoundedCornerShape(16.dp),
+                                    contentPadding = PaddingValues(vertical = 16.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Filled.Logout,
+                                        contentDescription = "Logout",
+                                        tint = Color.White
+                                    )
+                                    Spacer(Modifier.width(8.dp))
+                                    Text(
+                                        "Logout",
+                                        color = Color.White,
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
+                            }
+
+                            // Padding ekstra untuk bottom nav
+                            item { Spacer(Modifier.height(20.dp)) }
+                        }
+                    }
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun ProfileContent(
-    userName: String,
-    userEmail: String,
-    avatarUrl: String,
-    totalPoints: Int,
-    quizzesCompleted: Int,
-    rank: Int,
-    onLogout: () -> Unit,
-    onNavigateToSettings: () -> Unit
-) {
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        // Profile header
-        item {
-            ProfileHeader(
-                userName = userName,
-                userEmail = userEmail,
-                avatarUrl = avatarUrl,
-                rank = rank
-            )
-        }
-
-        // Stats cards
-        item {
-            StatsSection(
-                totalPoints = totalPoints,
-                quizzesCompleted = quizzesCompleted
-            )
-        }
-
-        // Settings section
-        item {
-            Text(
-                "Settings",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.Black,
-                modifier = Modifier.padding(top = 8.dp)
-            )
-        }
-
-        item {
-            SettingsItem(
-                icon = Icons.Filled.Edit,
-                title = "Edit Profile",
-                onClick = { /* TODO */ }
-            )
-        }
-
-        item {
-            SettingsItem(
-                icon = Icons.Filled.Notifications,
-                title = "Notifications",
-                onClick = { /* TODO */ }
-            )
-        }
-
-        item {
-            SettingsItem(
-                icon = Icons.Filled.Lock,
-                title = "Privacy & Security",
-                onClick = { /* TODO */ }
-            )
-        }
-
-        item {
-            SettingsItem(
-                icon = Icons.Filled.Help,
-                title = "Help & Support",
-                onClick = { /* TODO */ }
-            )
-        }
-
-        item {
-            SettingsItem(
-                icon = Icons.Filled.Settings,
-                title = "Settings",
-                onClick = onNavigateToSettings
-            )
-        }
-
-        item {
-            Button(
-                onClick = onLogout,
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.Red
-                ),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Icon(Icons.Filled.Logout, contentDescription = "Logout")
-                Spacer(Modifier.width(8.dp))
-                Text("Logout")
-            }
-        }
-
-        // Bottom spacing for bottom nav
-        item {
-            Spacer(Modifier.height(80.dp))
         }
     }
 }
@@ -208,146 +226,133 @@ private fun ProfileHeader(
     userName: String,
     userEmail: String,
     avatarUrl: String,
-    rank: Int
+    followers: Int,
+    following: Int,
+    onFollowersClick: () -> Unit,
+    onFollowingClick: () -> Unit
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 16.dp, start = 24.dp, end = 24.dp, bottom = 32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Column(
+        // Avatar
+        AsyncImage(
+            model = avatarUrl.ifEmpty { "https://via.placeholder.com/200" },
+            contentDescription = "Profile picture",
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .size(100.dp)
+                .clip(CircleShape)
+                .background(Color.White.copy(alpha = 0.2f)),
+            contentScale = ContentScale.Crop
+        )
+
+        Spacer(Modifier.height(16.dp))
+
+        // Name
+        Text(
+            text = userName,
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.White
+        )
+
+        Spacer(Modifier.height(4.dp))
+
+        // Email
+        Text(
+            text = userEmail,
+            fontSize = 14.sp,
+            color = Color.White.copy(alpha = 0.8f)
+        )
+
+        Spacer(Modifier.height(24.dp))
+
+        // Stats Row (hanya Followers & Following)
+        Row(
+            modifier = Modifier.fillMaxWidth(0.6f),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            // Avatar
-            AsyncImage(
-                model = avatarUrl.ifEmpty { "https://via.placeholder.com/200" },
-                contentDescription = "Profile picture",
+            StatItem(
+                value = followers.toString(),
+                label = "Followers",
+                onClick = onFollowersClick
+            )
+
+            Divider(
                 modifier = Modifier
-                    .size(100.dp)
-                    .clip(CircleShape)
-                    .background(DeepBlue),
-                contentScale = ContentScale.Crop
+                    .width(1.dp)
+                    .height(40.dp),
+                color = Color.White.copy(alpha = 0.3f)
             )
 
-            Spacer(Modifier.height(16.dp))
-
-            // Name
-            Text(
-                text = userName,
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.Black
+            StatItem(
+                value = following.toString(),
+                label = "Following",
+                onClick = onFollowingClick
             )
-
-            Spacer(Modifier.height(4.dp))
-
-            // Email
-            Text(
-                text = userEmail,
-                fontSize = 14.sp,
-                color = Color.Gray
-            )
-
-            Spacer(Modifier.height(16.dp))
-
-            // Rank badge
-            Surface(
-                shape = RoundedCornerShape(20.dp),
-                color = DeepBlue
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        Icons.Filled.Star,
-                        contentDescription = "Rank",
-                        tint = Color(0xFFFFD700),
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Text(
-                        "Rank #$rank",
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
         }
     }
 }
 
 @Composable
-private fun StatsSection(
-    totalPoints: Int,
-    quizzesCompleted: Int
+private fun StatItem(
+    value: String,
+    label: String,
+    onClick: (() -> Unit)? = null
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .clickable(enabled = onClick != null) { onClick?.invoke() }
+            .padding(8.dp)
     ) {
-        StatCard(
-            icon = Icons.Filled.Stars,
-            title = "Total Points",
-            value = totalPoints.toString(),
-            modifier = Modifier.weight(1f)
+        Text(
+            text = value,
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.White
         )
-        StatCard(
-            icon = Icons.Filled.CheckCircle,
-            title = "Quizzes",
-            value = quizzesCompleted.toString(),
-            modifier = Modifier.weight(1f)
+        Spacer(Modifier.height(4.dp))
+        Text(
+            text = label,
+            fontSize = 14.sp,
+            color = Color.White.copy(alpha = 0.8f)
         )
     }
 }
 
 @Composable
-private fun StatCard(
-    icon: ImageVector,
-    title: String,
-    value: String,
-    modifier: Modifier = Modifier
-) {
+private fun TotalPointsCard(totalPoints: Int) {
     Card(
-        modifier = modifier,
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = DeepBlue
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        Column(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .padding(20.dp),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                icon,
-                contentDescription = title,
-                tint = DeepBlue,
-                modifier = Modifier.size(32.dp)
-            )
-            Spacer(Modifier.height(8.dp))
             Text(
-                value,
-                fontSize = 24.sp,
+                text = "Total : ${totalPoints.formatPoints()} Points",
+                fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.Black
-            )
-            Text(
-                title,
-                fontSize = 12.sp,
-                color = Color.Gray
+                color = Color.White
             )
         }
     }
 }
 
 @Composable
-private fun SettingsItem(
+private fun MenuItemCard(
     icon: ImageVector,
     title: String,
     onClick: () -> Unit
@@ -356,38 +361,76 @@ private fun SettingsItem(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = CardBackground
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(20.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                icon,
-                contentDescription = title,
-                tint = DeepBlue,
-                modifier = Modifier.size(24.dp)
-            )
+            // Icon dengan background
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(getIconBackgroundColor(title)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    icon,
+                    contentDescription = title,
+                    tint = getIconColor(title),
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+
             Spacer(Modifier.width(16.dp))
+
             Text(
                 title,
                 fontSize = 16.sp,
-                color = Color.Black,
+                color = Color(0xFF333333),
                 modifier = Modifier.weight(1f)
             )
+
             Icon(
                 Icons.Filled.ChevronRight,
                 contentDescription = "Navigate",
-                tint = Color.Gray
+                tint = Color.Gray,
+                modifier = Modifier.size(20.dp)
             )
         }
     }
 }
 
-// Colors
-private val DeepBlue = Color(0xFF162471)
-private val LightBackground = Color(0xFFF5F5F5)
+// Helper functions
+private fun getIconBackgroundColor(title: String): Color {
+    return when (title) {
+        "Settings" -> Color(0xFFE3F2FD)
+        "View quiz history" -> Color(0xFFFFF3E0)
+        "Help Center" -> Color(0xFFE8F5E9)
+        else -> Color(0xFFF5F5F5)
+    }
+}
+
+private fun getIconColor(title: String): Color {
+    return when (title) {
+        "Settings" -> Color(0xFF2196F3)
+        "View quiz history" -> Color(0xFFFF9800)
+        "Help Center" -> Color(0xFF4CAF50)
+        else -> Color.Gray
+    }
+}
+
+private fun Int.formatPoints(): String {
+    return when {
+        this >= 1000000 -> String.format("%.1fM", this / 1000.0).replace(".0", "")
+        this >= 1000 -> String.format("%.1fK", this / 1000.0).replace(".0", "")
+        else -> this.toString()
+    }
+}
