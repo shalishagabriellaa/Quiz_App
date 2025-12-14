@@ -39,6 +39,7 @@ import com.example.tubes.ui.screen.profile.FollowersScreen
 import com.example.tubes.ui.screen.profile.FollowingScreen
 import com.example.tubes.ui.screen.quizzes.YourQuizzesScreen
 import com.example.tubes.viewmodel.*
+import com.example.tubes.ui.screen.setting.SettingScreen
 
 @Composable
 fun StudentNavigation() {
@@ -168,6 +169,7 @@ fun StudentNavigation() {
 
         // ===== SETTINGS =====
         composable(Screen.SettingScreen.route) {
+            // ✅ sekarang semua setting menuju page.screen.setting.SettingScreen
             SettingScreen()
         }
 
@@ -408,7 +410,10 @@ private fun MainScreenWithBottomNav(
                                 onQR = { showQrScanner = true },
                                 onLeaderboard = { bottomNavController.navigate("leaderboard") },
                                 onProfile = { bottomNavController.navigate("profile") },
+
+                                // ✅ SEMUA SETTINGS -> Screen.SettingScreen.route -> page.screen.setting.SettingScreen()
                                 onSettings = { navController.navigate(Screen.SettingScreen.route) },
+
                                 onSearchQuizCode = { code ->
                                     homeViewModel.searchQuizByCode(code) { quizId ->
                                         navController.navigate("testInfo/$quizId")
@@ -441,17 +446,16 @@ private fun MainScreenWithBottomNav(
                             userId = userId,
                             onBackClick = { bottomNavController.navigate("home") },
                             onResultClick = { quizId ->
-                                // 🔥 BUKAN lagi ke testInfo / QuizScreen,
-                                // tapi langsung ke screen pembahasan
                                 navController.navigate("answerExplanation/$quizId")
                             },
-                            viewModel = yourQuizzesViewModel  // pastikan ViewModel ini sudah kamu buat di atas
+                            viewModel = yourQuizzesViewModel
                         )
                     }
 
                     composable("leaderboard") {
                         LeaderboardScreen(
                             viewModel = leaderboardViewModel,
+                            // ✅ settings dari leaderboard juga ke SettingScreen yg sama
                             onSettings = { navController.navigate(Screen.SettingScreen.route) }
                         )
                     }
@@ -473,6 +477,7 @@ private fun MainScreenWithBottomNav(
                                     popUpTo(0) { inclusive = true }
                                 }
                             },
+                            // ✅ settings dari profile juga ke SettingScreen yg sama
                             onNavigateToSettings = {
                                 navController.navigate(Screen.SettingScreen.route)
                             },
@@ -610,7 +615,6 @@ private fun QrScannerOverlay(
 
                 Spacer(Modifier.height(16.dp))
 
-                // simulasi scan (untuk test)
                 Button(onClick = { onCodeScanned("DUMMY_CODE") }) {
                     Text("Simulate Scan")
                 }
