@@ -1,12 +1,14 @@
 package com.example.tubes
 
-import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -35,6 +37,8 @@ import com.example.tubes.ui.screen.leaderboard.LeaderboardScreen
 import com.example.tubes.ui.screen.profile.ProfileScreen
 import com.example.tubes.ui.screen.quizzes.YourQuizzesScreen
 import com.example.tubes.viewmodel.*
+import com.example.tubes.viewmodel.LeaderboardViewModel
+import com.example.tubes.viewmodel.YourQuizzesViewModel
 
 @Composable
 fun StudentNavigation() {
@@ -78,6 +82,26 @@ fun StudentNavigation() {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
                 @Suppress("UNCHECKED_CAST")
                 return ProfileViewModel(profileRepository) as T
+            }
+        }
+    )
+
+    // 🔥 NEW: LeaderboardViewModel pakai HomeRepository yang sama
+    val leaderboardViewModel: LeaderboardViewModel = viewModel(
+        factory = object : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                @Suppress("UNCHECKED_CAST")
+                return LeaderboardViewModel(homeRepository) as T
+            }
+        }
+    )
+
+    // 🔥 NEW: YourQuizzesViewModel (untuk layar YourQuizzesScreen)
+    val yourQuizzesViewModel: YourQuizzesViewModel = viewModel(
+        factory = object : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                @Suppress("UNCHECKED_CAST")
+                return YourQuizzesViewModel(homeRepository) as T
             }
         }
     )
@@ -215,7 +239,9 @@ fun StudentNavigation() {
                 authViewModel = authViewModel,
                 homeViewModel = homeViewModel,
                 profileViewModel = profileViewModel,
-                quizViewModel = quizViewModel
+                quizViewModel = quizViewModel,
+                leaderboardViewModel = leaderboardViewModel,
+                yourQuizzesViewModel = yourQuizzesViewModel
             )
         }
     }
@@ -245,7 +271,9 @@ private fun MainScreenWithBottomNav(
     authViewModel: AuthViewModel,
     homeViewModel: HomeViewModel,
     profileViewModel: ProfileViewModel,
-    quizViewModel: QuizViewModel
+    quizViewModel: QuizViewModel,
+    leaderboardViewModel: LeaderboardViewModel,
+    yourQuizzesViewModel: YourQuizzesViewModel
 ) {
     val bottomNavController = rememberNavController()
     val currentBackStackEntry by bottomNavController.currentBackStackEntryAsState()
@@ -282,7 +310,6 @@ private fun MainScreenWithBottomNav(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding)
-                    // 🔥 INI KUNCI ANTI KECLIP & ANTI WHITE STRIP
                     .padding(bottom = totalBottomPadding)
             ) {
                 NavHost(
@@ -348,19 +375,27 @@ private fun MainScreenWithBottomNav(
                         }
                     }
 
+                    // 🔥 TAB "QUIZZES" – pakai YourQuizzesScreen yang kamu mau
                     composable("quizzes") {
-                        val state by homeViewModel.uiState.collectAsState()
+                        val authState by authViewModel.authState.collectAsState()
+                        val userId = (authState as? AuthState.Success)?.userId ?: ""
+
                         YourQuizzesScreen(
-                            quizzes = state.yourQuizzesUi,
+                            userId = userId,
                             onBackClick = { bottomNavController.navigate("home") },
-                            onQuizClick = { quizId ->
+                            onResultClick = { quizId ->
+                                // sementara arahkan ke TestInformation / detail quiz
                                 navController.navigate("testInfo/$quizId")
-                            }
+                            },
+                            viewModel = yourQuizzesViewModel
                         )
                     }
 
                     composable("leaderboard") {
-                        LeaderboardScreen()
+                        LeaderboardScreen(
+                            viewModel = leaderboardViewModel,
+                            onSettings = { navController.navigate(Screen.SettingScreen.route) }
+                        )
                     }
 
                     composable("profile") {
@@ -387,7 +422,7 @@ private fun MainScreenWithBottomNav(
         }
 
         /* =========================================================
-           LAYER 2 — BOTTOM BAR (OVERLAY, TIDAK KECLIP)
+           LAYER 2 — BOTTOM BAR (OVERLAY)
            ========================================================= */
         Box(
             modifier = Modifier
@@ -494,7 +529,7 @@ private fun QrScannerOverlay(
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+                verticalArrangement = Arrangement.Center   // ✅ perbaikan: bukan verticalAlignment
             ) {
                 Text(
                     "QR Scanner",

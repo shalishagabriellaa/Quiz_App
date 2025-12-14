@@ -13,4 +13,8 @@ interface HomeRepository {
     suspend fun findQuizIdByCode(quizCode: String): String?
     suspend fun getQuizzesByCategory(categoryId: String): List<Quiz>
     suspend fun getUserQuizResults(userId: String): List<UserQuizResult>
+    suspend fun getLeaderboardUsers(
+        limit: Int = 50,
+        weekly: Boolean = false
+    ): List<User>
 }

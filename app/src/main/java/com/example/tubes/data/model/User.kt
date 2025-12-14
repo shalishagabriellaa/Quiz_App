@@ -18,6 +18,11 @@ data class User(
     @ServerTimestamp
     val updatedAt : Timestamp? = null,
 
-    val totalScore: Long = 0L
+    val totalScore: Long = 0L,
 
+    val weeklyScore: Long = 0L,
+
+    // minggu ke berapa terakhir kali weeklyScore diperbarui
+    // (dipakai untuk reset otomatis kalau minggu sudah ganti)
+    val weekOfYear: Int = 0
 )

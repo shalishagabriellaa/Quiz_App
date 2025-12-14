@@ -193,4 +193,41 @@ class HomeRepositoryImpl : HomeRepository {
             emptyList()
         }
     }
+
+    // HomeRepositoryImpl.kt
+
+    override suspend fun getLeaderboardUsers(
+        limit: Int,
+        weekly: Boolean
+    ): List<User> {
+        return try {
+            val orderField = if (weekly) "weeklyScore" else "totalScore"
+
+            // ⬅️ HAPUS whereEqualTo("role","user") supaya tidak butuh composite index
+            val snapshot = db.collection("users")
+                .orderBy(orderField, Query.Direction.DESCENDING)
+                .limit(limit.toLong())
+                .get()
+                .await()
+
+            snapshot.documents.mapNotNull { doc ->
+                val user = doc.toObject(User::class.java) ?: return@mapNotNull null
+
+                // ⬅️ Filter hanya role "user" di sisi Kotlin
+                if (user.role != "user") return@mapNotNull null
+
+                // (Opsional) kalau mau, skip yang skornya 0
+                if (orderField == "weeklyScore" && user.totalScore == 0L) {
+                    // atau gunakan user.weeklyScore kalau sudah ada di model
+                    // if (user.weeklyScore == 0L) return@mapNotNull null
+                }
+
+                user.copy(uid = doc.id)
+            }
+        } catch (e: Exception) {
+            Log.e("HomeRepository", "getLeaderboardUsers EXCEPTION", e)
+            emptyList()
+        }
+    }
+
 }

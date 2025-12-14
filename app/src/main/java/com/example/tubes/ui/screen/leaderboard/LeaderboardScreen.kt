@@ -1,6 +1,5 @@
 package com.example.tubes.ui.screen.leaderboard
 
-import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -19,48 +18,25 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import com.example.tubes.R
+import com.example.tubes.viewmodel.LeaderboardTab
+import com.example.tubes.viewmodel.LeaderboardUiState
+import com.example.tubes.viewmodel.LeaderboardUser
+import com.example.tubes.viewmodel.LeaderboardViewModel
 
-// Required imports
-import androidx.compose.ui.res.painterResource
-import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
-
-data class LeaderboardUiState(
-    val isLoading: Boolean = false,
-    val users: List<LeaderboardUser> = emptyList(),
-    val error: String? = null
-)
-
-// Colors
 private val DeepBlue = Color(0xFF162471)
 private val LightBackground = Color(0xFFF5F5F5)
 
-data class LeaderboardUser(
-    val id: String,
-    val name: String,
-    val points: Int,
-    val avatarUrl: String,
-    val rank: Int
-)
-
-enum class LeaderboardTab {
-    WEEKLY, ALL_TIME
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LeaderboardScreen(
-    viewModel: LeaderboardViewModel = viewModel()
+    viewModel: LeaderboardViewModel,
+    onSettings: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var selectedTab by remember { mutableStateOf(LeaderboardTab.WEEKLY) }
@@ -70,40 +46,7 @@ fun LeaderboardScreen(
     }
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        "Leaderboard",
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = { /* Settings */ }) {
-                        Icon(
-                            Icons.Filled.Settings,
-                            contentDescription = "Settings",
-                            tint = Color.White
-                        )
-                    }
-                },
-                actions = {
-                    // Owl mascot icon placeholder
-                    Icon(
-                        painter = painterResource(android.R.drawable.ic_dialog_info),
-                        contentDescription = "Mascot",
-                        tint = Color(0xFF6EC6FF),
-                        modifier = Modifier
-                            .size(40.dp)
-                            .padding(end = 8.dp)
-                    )
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = DeepBlue
-                )
-            )
-        }
+        containerColor = Color.Transparent
     ) { padding ->
         Column(
             modifier = Modifier
@@ -111,12 +54,18 @@ fun LeaderboardScreen(
                 .background(LightBackground)
                 .padding(padding)
         ) {
-            // Tab selector
+
+            LeaderboardTopBar(onSettings = onSettings)
+
+            Spacer(Modifier.height(16.dp))
+
             LeaderboardTabSelector(
                 selectedTab = selectedTab,
                 onTabSelected = { selectedTab = it },
-                modifier = Modifier.padding(16.dp)
+                modifier = Modifier.padding(horizontal = 16.dp)
             )
+
+            Spacer(Modifier.height(8.dp))
 
             when {
                 uiState.isLoading -> {
@@ -127,6 +76,7 @@ fun LeaderboardScreen(
                         CircularProgressIndicator(color = DeepBlue)
                     }
                 }
+
                 uiState.error != null -> {
                     Box(
                         modifier = Modifier.fillMaxSize(),
@@ -144,20 +94,17 @@ fun LeaderboardScreen(
                         }
                     }
                 }
+
                 else -> {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        // Top 3 podium
                         item {
-                            TopThreePodium(
-                                topUsers = uiState.users.take(3)
-                            )
+                            TopThreePodium(topUsers = uiState.users.take(3))
                         }
 
-                        // Rest of the list
                         itemsIndexed(uiState.users.drop(3)) { index, user ->
                             LeaderboardItem(
                                 user = user.copy(rank = index + 4),
@@ -165,13 +112,62 @@ fun LeaderboardScreen(
                             )
                         }
 
-                        // Bottom spacing
                         item {
                             Spacer(Modifier.height(80.dp))
                         }
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun LeaderboardTopBar(
+    onSettings: () -> Unit
+) {
+    Surface(
+        color = DeepBlue,
+        shadowElevation = 4.dp
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp)
+                .padding(horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(
+                onClick = onSettings,
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .background(Color.White.copy(alpha = 0.18f))
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Settings,
+                    contentDescription = "Settings",
+                    tint = Color.White
+                )
+            }
+
+            Spacer(Modifier.weight(1f))
+
+            Text(
+                text = "Leaderboard",
+                color = Color.White,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.ExtraBold
+            )
+
+            Spacer(Modifier.weight(1f))
+
+            Icon(
+                painter = painterResource(id = R.drawable.ic_owl),
+                contentDescription = "Mascot",
+                tint = Color.Unspecified, // biar pakai warna asli asset
+                modifier = Modifier.size(32.dp)
+            )
         }
     }
 }
@@ -237,7 +233,6 @@ private fun TopThreePodium(
 ) {
     if (topUsers.isEmpty()) return
 
-    // Arrange as: 2nd, 1st, 3rd
     val arranged = listOf(
         topUsers.getOrNull(1),
         topUsers.getOrNull(0),
@@ -251,13 +246,13 @@ private fun TopThreePodium(
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.Bottom
     ) {
-        arranged.forEachIndexed { visualIndex, user ->
+        arranged.forEachIndexed { idx, user ->
             if (user != null) {
                 val actualRank = user.rank
                 val podiumColor = when (actualRank) {
-                    1 -> Color(0xFFFF6B9D) // Pink
-                    2 -> Color(0xFF64B5F6) // Blue
-                    3 -> Color(0xFFBA68C8) // Purple
+                    1 -> Color(0xFFFF6B9D)
+                    2 -> Color(0xFF64B5F6)
+                    3 -> Color(0xFFBA68C8)
                     else -> Color.Gray
                 }
                 val podiumHeight = when (actualRank) {
@@ -275,9 +270,7 @@ private fun TopThreePodium(
                     modifier = Modifier.weight(1f)
                 )
 
-                if (visualIndex < 2) {
-                    Spacer(Modifier.width(8.dp))
-                }
+                if (idx < 2) Spacer(Modifier.width(8.dp))
             }
         }
     }
@@ -295,7 +288,6 @@ private fun PodiumCard(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Crown for 1st place
         if (rank == 1) {
             Icon(
                 imageVector = Icons.Filled.EmojiEvents,
@@ -308,10 +300,7 @@ private fun PodiumCard(
             Spacer(Modifier.height(36.dp))
         }
 
-        // Avatar with rank badge
-        Box(
-            contentAlignment = Alignment.TopEnd
-        ) {
+        Box(contentAlignment = Alignment.TopEnd) {
             AsyncImage(
                 model = user.avatarUrl,
                 contentDescription = user.name,
@@ -322,7 +311,6 @@ private fun PodiumCard(
                 contentScale = ContentScale.Crop
             )
 
-            // Rank badge
             if (rank <= 3) {
                 Box(
                     modifier = Modifier
@@ -350,7 +338,6 @@ private fun PodiumCard(
 
         Spacer(Modifier.height(12.dp))
 
-        // Podium
         Box(
             modifier = Modifier
                 .width(100.dp)
@@ -365,9 +352,7 @@ private fun PodiumCard(
                 .padding(16.dp),
             contentAlignment = Alignment.TopCenter
         ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     text = user.name,
                     color = Color.White,
@@ -403,7 +388,6 @@ private fun LeaderboardItem(
                 .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Rank number
             Text(
                 text = "${user.rank}",
                 fontSize = 20.sp,
@@ -414,7 +398,6 @@ private fun LeaderboardItem(
 
             Spacer(Modifier.width(12.dp))
 
-            // Avatar
             AsyncImage(
                 model = user.avatarUrl,
                 contentDescription = user.name,
@@ -427,7 +410,6 @@ private fun LeaderboardItem(
 
             Spacer(Modifier.width(12.dp))
 
-            // Name and points
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = user.name,
@@ -439,41 +421,6 @@ private fun LeaderboardItem(
                     text = "${user.points} points",
                     fontSize = 14.sp,
                     color = Color.Gray
-                )
-            }
-        }
-    }
-}
-
-// ViewModel
-class LeaderboardViewModel : androidx.lifecycle.ViewModel() {
-    private val _uiState = MutableStateFlow(LeaderboardUiState())
-    val uiState: StateFlow<LeaderboardUiState> = _uiState.asStateFlow()
-
-    fun loadLeaderboard(tab: LeaderboardTab) {
-        viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
-            try {
-                // TODO: Replace with actual API call
-                // val users = repository.getLeaderboard(tab)
-
-                delay(800)
-                val mockUsers = listOf(
-                    LeaderboardUser("1", "Davis Curtis", 2569, "https://via.placeholder.com/100", 1),
-                    LeaderboardUser("2", "Alena Donin", 1469, "https://via.placeholder.com/100", 2),
-                    LeaderboardUser("3", "Craig Gouse", 1053, "https://via.placeholder.com/100", 3),
-                    LeaderboardUser("4", "Madelyn Dias", 590, "https://via.placeholder.com/100", 4),
-                    LeaderboardUser("5", "Zain Vaccaro", 448, "https://via.placeholder.com/100", 5)
-                )
-
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    users = mockUsers
-                )
-            } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    error = e.message ?: "Unknown error"
                 )
             }
         }

@@ -328,7 +328,7 @@ private fun QuizLargeCard(
 }
 
 @Composable
-private fun YourQuizRow(
+fun YourQuizRow(
     q: YourQuizUi,
     onClick: () -> Unit
 ) {
