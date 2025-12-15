@@ -69,8 +69,9 @@ fun TeacherQuestionBankScreen(
             ) {
                 items(
                     items = questions,
-                    key = { it.id }
-                ) { item ->
+                    key = { "${it.quizId}_${it.id}" }
+                )
+                { item ->
                     TeacherQuestionBankCard(
                         item = item,
                         onDelete = {
