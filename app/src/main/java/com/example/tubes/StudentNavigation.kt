@@ -444,6 +444,9 @@ private fun MainScreenWithBottomNav(
                     startDestination = "home"
                 ) {
 
+                    // Di StudentNavigation.kt, di dalam MainScreenWithBottomNav
+// Ubah composable("home") menjadi seperti ini:
+
                     composable("home") {
                         val authState by authViewModel.authState.collectAsState()
                         val state by homeViewModel.uiState.collectAsState()
@@ -472,6 +475,7 @@ private fun MainScreenWithBottomNav(
                                 topAuthors = state.topAuthors.map { it.toAuthorUi() },
                                 userName = state.userName,
                                 avatarUrl = state.avatarUrl,
+                                searchError = state.searchError, // 🆕 Pass searchError dari state
                                 onHome = {},
                                 onQuizzes = { bottomNavController.navigate("quizzes") },
                                 onQR = { showQrScanner = true },
@@ -480,7 +484,7 @@ private fun MainScreenWithBottomNav(
                                 onSettings = { navController.navigate(Screen.SettingScreen.route) },
                                 onSearchQuizCode = { code ->
                                     homeViewModel.searchQuizByCode(code) { quizId ->
-                                        navController.navigate("testInfo/$quizId")
+                                        navController.navigate("testInfo/$quizId") // 🔥 Langsung ke testInfo
                                     }
                                 },
                                 onCategorySeeAll = { navController.navigate("category") },
