@@ -3,7 +3,6 @@ package com.example.tubes.ui.screen
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -19,30 +18,28 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.tubes.viewmodel.QuizViewModel
+import com.example.tubes.data.repository.QuizRepositoryImpl
+import com.example.tubes.viewmodel.AnswerExplanationViewModel
+import com.example.tubes.viewmodel.AnswerExplanationViewModelFactory
 
 @Composable
 fun AnswerExplanationScreen(
     quizId: String,
-    viewModel: QuizViewModel,
     onBackClick: () -> Unit
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    // ✅ pakai VM baru yang state-nya jelas
+    val repo = remember { QuizRepositoryImpl() }
+    val vm: AnswerExplanationViewModel = viewModel(
+        factory = AnswerExplanationViewModelFactory(repo)
+    )
+    val uiState by vm.uiState.collectAsState()
 
-    // index soal sekarang
-    var currentQuestionIndex by remember { mutableStateOf(0) }
-    // soal mana saja yang explanation-nya sedang dibuka
+    var currentQuestionIndex by remember { mutableIntStateOf(0) }
     var expandedQuestions by remember { mutableStateOf(setOf<Int>()) }
 
-    // Kalau data belum ada (misal user langsung lompat ke explanation tanpa main quiz),
-    // kita pastikan quiz ter-load
     LaunchedEffect(quizId) {
-        if (uiState.quiz?.id != quizId || uiState.questions.isEmpty()) {
-            viewModel.loadQuiz(quizId)
-        }
+        vm.load(quizId)
     }
 
     // Loading
@@ -58,6 +55,18 @@ fun AnswerExplanationScreen(
         return
     }
 
+    if (uiState.error != null) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color(0xFF1A237E)),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(text = "Error: ${uiState.error}", color = Color.White)
+        }
+        return
+    }
+
     val questions = uiState.questions
     if (questions.isEmpty()) {
         Box(
@@ -66,26 +75,20 @@ fun AnswerExplanationScreen(
                 .background(Color(0xFF1A237E)),
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = "No questions available.",
-                color = Color.White
-            )
+            Text(text = "No questions available.", color = Color.White)
         }
         return
     }
 
-    // Biar aman kalau jumlah soal berubah
-    if (currentQuestionIndex !in questions.indices) {
-        currentQuestionIndex = 0
-    }
+    if (currentQuestionIndex !in questions.indices) currentQuestionIndex = 0
 
     val totalQuestions = questions.size
     val currentQuestion = questions[currentQuestionIndex]
     val options = currentQuestion.options
     val correctAnswerIndex = currentQuestion.correctAnswerIndex
-    val userAnswerText = uiState.userAnswers[currentQuestion.id]
-// Cari tahu indeks dari teks jawaban tersebut di dalam daftar opsi
-    val userAnswerIndex = options.indexOf(userAnswerText)
+
+    // ✅ jawaban user sekarang pakai index, bukan text
+    val userAnswerIndex: Int? = uiState.userAnswersIndex[currentQuestion.id]
 
     val isExpanded = expandedQuestions.contains(currentQuestionIndex)
 
@@ -125,9 +128,8 @@ fun AnswerExplanationScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Progress bar
             LinearProgressIndicator(
-                progress = (currentQuestionIndex + 1).toFloat() / totalQuestions,
+                progress = (currentQuestionIndex + 1).toFloat() / totalQuestions.toFloat(),
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(8.dp)
@@ -138,7 +140,6 @@ fun AnswerExplanationScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // QUESTION CARD
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -152,7 +153,7 @@ fun AnswerExplanationScreen(
                         .padding(20.dp)
                 ) {
                     Text(
-                        text = currentQuestion.category,
+                        text = "Question",
                         color = Color.Gray,
                         fontSize = 14.sp
                     )
@@ -168,14 +169,12 @@ fun AnswerExplanationScreen(
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    // OPTIONS – langsung highlight history
                     options.forEachIndexed { index, option ->
                         ExplanationOptionItem(
                             option = option,
                             prefix = ('A' + index).toString(),
                             isUserAnswer = (userAnswerIndex == index),
                             isCorrectAnswer = (index == correctAnswerIndex),
-                            // showResult selalu true (ini screen pembahasan)
                             showResult = true
                         )
                         Spacer(modifier = Modifier.height(12.dp))
@@ -185,7 +184,6 @@ fun AnswerExplanationScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // TOGGLE EXPLANATION (bisa naik-turun)
             TextButton(
                 onClick = {
                     expandedQuestions = if (isExpanded) {
@@ -211,20 +209,18 @@ fun AnswerExplanationScreen(
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(containerColor = Color.White)
                 ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp)
-                    ) {
-                        // Kalau salah, tampilkan teks jawaban yang benar juga
-                        if (userAnswerIndex != null && userAnswerIndex != correctAnswerIndex) {
-                            val correctLabel = ('A' + correctAnswerIndex).toString()
-                            Text(
-                                text = "Correct Answer: $correctLabel. ${options[correctAnswerIndex]}",
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF2E7D32),
-                                fontSize = 14.sp
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                        }
+                    Column(modifier = Modifier.padding(16.dp)) {
+
+                        // tampilkan correct answer
+                        val correctLabel = ('A' + correctAnswerIndex).toString()
+                        Text(
+                            text = "Correct Answer: $correctLabel. ${options.getOrNull(correctAnswerIndex).orEmpty()}",
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF2E7D32),
+                            fontSize = 14.sp
+                        )
+
+                        Spacer(modifier = Modifier.height(8.dp))
 
                         Text(
                             text = currentQuestion.explanation,
@@ -237,48 +233,33 @@ fun AnswerExplanationScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // NAVIGATION BUTTONS
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Button(
                     onClick = {
-                        if (currentQuestionIndex > 0) {
-                            currentQuestionIndex--
-                        } else {
-                            onBackClick()
-                        }
+                        if (currentQuestionIndex > 0) currentQuestionIndex--
+                        else onBackClick()
                     },
                     modifier = Modifier
                         .weight(1f)
                         .height(56.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF2196F3)
-                    ),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2196F3)),
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text(
-                        text = "Previous",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Text("Previous", fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 }
 
                 Button(
                     onClick = {
-                        if (currentQuestionIndex < totalQuestions - 1) {
-                            currentQuestionIndex++
-                        } else {
-                            onBackClick()
-                        }
+                        if (currentQuestionIndex < totalQuestions - 1) currentQuestionIndex++
+                        else onBackClick()
                     },
                     modifier = Modifier
                         .weight(1f)
                         .height(56.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFFE91E63)
-                    ),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE91E63)),
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Text(
@@ -301,8 +282,8 @@ fun ExplanationOptionItem(
     showResult: Boolean
 ) {
     val backgroundColor = when {
-        showResult && isCorrectAnswer -> Color(0xFFE8F5E9)           // hijau
-        showResult && isUserAnswer && !isCorrectAnswer -> Color(0xFFFFEBEE) // merah muda
+        showResult && isCorrectAnswer -> Color(0xFFE8F5E9)
+        showResult && isUserAnswer && !isCorrectAnswer -> Color(0xFFFFEBEE)
         else -> Color.White
     }
 
@@ -328,36 +309,25 @@ fun ExplanationOptionItem(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.weight(1f)
             ) {
-                Text(
-                    text = "$prefix. ",
-                    fontSize = 16.sp,
-                    color = Color.Gray
-                )
-                Text(
-                    text = option,
-                    fontSize = 16.sp
-                )
+                Text(text = "$prefix. ", fontSize = 16.sp, color = Color.Gray)
+                Text(text = option, fontSize = 16.sp)
             }
 
             if (showResult) {
                 when {
-                    isCorrectAnswer -> {
-                        Icon(
-                            imageVector = Icons.Default.CheckCircle,
-                            contentDescription = "Correct",
-                            tint = Color(0xFF4CAF50),
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
+                    isCorrectAnswer -> Icon(
+                        imageVector = Icons.Default.CheckCircle,
+                        contentDescription = "Correct",
+                        tint = Color(0xFF4CAF50),
+                        modifier = Modifier.size(24.dp)
+                    )
 
-                    isUserAnswer && !isCorrectAnswer -> {
-                        Icon(
-                            imageVector = Icons.Default.Cancel,
-                            contentDescription = "Wrong",
-                            tint = Color(0xFFF44336),
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
+                    isUserAnswer && !isCorrectAnswer -> Icon(
+                        imageVector = Icons.Default.Cancel,
+                        contentDescription = "Wrong",
+                        tint = Color(0xFFF44336),
+                        modifier = Modifier.size(24.dp)
+                    )
                 }
             }
         }

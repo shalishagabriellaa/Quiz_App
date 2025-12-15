@@ -14,6 +14,6 @@ class UserRepositoryImpl {
     }
 
     suspend fun updateAvatar(uid: String, imageUrl: String) {
-        users.document(uid).update("photoUrl", imageUrl).await()
+        users.document(uid).update("avatarUrl", imageUrl).await() // ✅ fix
     }
 }

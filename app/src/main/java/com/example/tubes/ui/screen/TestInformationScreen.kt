@@ -72,34 +72,32 @@ fun TestInformationScreen(
             isLoading = true
             error = null
 
-            // ambil quiz dari Firestore
-            val quiz = repo.getQuizById(quizId)
+            val quiz = repo.getQuizById(quizId) ?: throw Exception("Quiz not found")
 
-            // ambil author
+// author
             val user = repo.getUser(quiz.authorId)
-            val authorName = user?.fullName ?: user?.name ?: "Unknown"
+            val authorName = user?.fullName ?: user?.fullName ?: "Unknown"
             val avatarUrl = user?.avatarUrl ?: ""
 
-            // attemptCount -> text peserta
-            val participantText = "${quiz.attemptCount} people took this"
+// participant text
+            val participantText = "${quiz.totalParticipants} people took this"
 
-            // timer: Long (detik) -> menit (minimal 1 menit)
-            val minutes = quiz.timer.let { seconds ->
-                val m = TimeUnit.SECONDS.toMinutes(seconds)
-                if (m <= 0L) 1L else m
+// duration (detik → menit, minimal 1)
+            val minutes = TimeUnit.SECONDS.toMinutes(quiz.durationMinutes).let {
+                if (it <= 0) 1 else it
             }
 
             quizDetail = QuizDetail(
-                id = quizId,
+                id = quiz.id,
                 title = quiz.title,
-                imageUrl = quiz.bannerUrl,
+                imageUrl = quiz.bannerUrl ?: "",   // ⬅️ FIX String?
                 participantCount = participantText,
                 author = QuizAuthor(
                     name = authorName,
                     avatarUrl = avatarUrl
                 ),
                 createdTimeMillis = quiz.createdAt?.toDate()?.time ?: 0L,
-                totalQuestions = quiz.questionCount.toInt(),
+                totalQuestions = quiz.totalQuestions.toInt(),
                 questionType = "Multiple Choice Question",
                 duration = "$minutes mins",
                 rules = listOf(
@@ -109,6 +107,7 @@ fun TestInformationScreen(
                     "If you don't earn a badge this time, you can retake this test once more."
                 )
             )
+
         } catch (e: Exception) {
             error = e.message ?: "Unknown error"
         } finally {

@@ -47,7 +47,7 @@ class HomeViewModel(
 
                 val trendingUi = trending.map { quiz ->
                     val author = authorCache[quiz.authorId]
-                    val authorName = author?.fullName ?: author?.name ?: "Unknown"
+                    val authorName = author?.fullName ?: author?.fullName ?: "Unknown"
                     val avatarUrl = author?.avatarUrl
 
                     quiz.toUi(
@@ -62,7 +62,6 @@ class HomeViewModel(
                 val yourQuizzesUi = yourQuizResults.map { it.toYourQuizUi() }
 
                 val displayName = user?.fullName
-                    ?: user?.name
                     ?: user?.email?.substringBefore("@")
                     ?: "Guest"
 

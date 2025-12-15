@@ -155,7 +155,7 @@ private fun UserItem(
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = user.fullName ?: user.name ?: "Unknown",
+                    text = user.fullName ?: user.fullName ?: "Unknown",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Medium,
                     color = Color.Black

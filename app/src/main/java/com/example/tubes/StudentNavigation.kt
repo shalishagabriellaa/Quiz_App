@@ -260,7 +260,6 @@ fun StudentNavigation() {
             val quizId = backStackEntry.arguments?.getString("quizId") ?: ""
             AnswerExplanationScreen(
                 quizId = quizId,
-                viewModel = quizViewModel,
                 onBackClick = { navController.popBackStack() }
             )
         }

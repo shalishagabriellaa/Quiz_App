@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.tubes.data.model.QuestionUi
 import com.example.tubes.viewmodel.QuizViewModel
+import androidx.compose.runtime.collectAsState
 
 @Composable
 fun QuizScreen(
@@ -136,8 +137,12 @@ fun QuizScreen(
 
             // Progress Bar
             if (uiState.questions.isNotEmpty()) {
+                val progressValue =
+                    if (uiState.questions.isEmpty()) 0f
+                    else (uiState.currentQuestionIndex + 1).toFloat() / uiState.questions.size.toFloat()
+
                 LinearProgressIndicator(
-                    progress = { (uiState.currentQuestionIndex + 1).toFloat() / uiState.questions.size },
+                    progress = progressValue,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 24.dp, vertical = 16.dp)
@@ -148,20 +153,15 @@ fun QuizScreen(
                 )
             }
 
-            // Kartu Pertanyaan
-            // Kartu Pertanyaan
-            // Kartu Pertanyaan
-            if (uiState.questions.isNotEmpty() && uiState.currentQuestionIndex < uiState.questions.size) {
+            if (uiState.questions.isNotEmpty() && uiState.currentQuestionIndex in uiState.questions.indices) {
                 val currentQuestion = uiState.questions[uiState.currentQuestionIndex]
 
-                // --- PERBAIKAN DI SINI ---    // Dapatkan jawaban yang dipilih dari map (bisa jadi null)
-                val selectedAnswer = uiState.userAnswers[currentQuestion.id]
-                // Cari indeks dari jawaban tersebut. Jika 'selectedAnswer' adalah null, indexOf akan aman dan mengembalikan -1.
-                val answerIndex = currentQuestion.options.indexOf(selectedAnswer)
+                // userAnswers: Map<QuestionId, Int>
+                val answerIndex: Int = uiState.userAnswers[currentQuestion.id] ?: -1
 
                 QuestionCard(
                     question = currentQuestion,
-                    selectedAnswerIndex = answerIndex, // Gunakan hasil yang sudah aman (answerIndex)
+                    selectedAnswerIndex = answerIndex,
                     onAnswerSelected = { newAnswerIndex -> viewModel.selectAnswer(newAnswerIndex) },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -169,7 +169,6 @@ fun QuizScreen(
                         .padding(24.dp)
                 )
             }
-
 
             // Tombol Navigasi
             Row(
@@ -287,7 +286,7 @@ fun QuestionCard(
                 .padding(24.dp)
                 .verticalScroll(rememberScrollState())
         ) {
-            Text(question.category, color = Color.Gray, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+//            Text(question.category, color = Color.Gray, fontSize = 14.sp, fontWeight = FontWeight.Medium)
             Spacer(modifier = Modifier.height(12.dp))
             Text(question.question, color = Color.Black, fontSize = 20.sp, fontWeight = FontWeight.Bold, lineHeight = 28.sp)
             Spacer(modifier = Modifier.height(24.dp))

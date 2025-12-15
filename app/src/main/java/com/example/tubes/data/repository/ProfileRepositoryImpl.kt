@@ -51,112 +51,113 @@ class ProfileRepositoryImpl : ProfileRepository {
 
     // === FOLLOW SYSTEM ===
 
-    override suspend fun followUser(targetUserId: String) {
-        val currentUserId = auth.currentUser?.uid
-            ?: throw Exception("User tidak login")
+//    override suspend fun followUser(targetUserId: String) {
+//        val currentUserId = auth.currentUser?.uid
+//            ?: throw Exception("User tidak login")
+//
+//        if (currentUserId == targetUserId) {
+//            throw Exception("Tidak bisa follow diri sendiri")
+//        }
+//
+//        try {
+//            db.runBatch { batch ->
+//                // Tambah targetUserId ke following list current user
+//                batch.update(
+//                    usersCollection.document(currentUserId),
+//                    "following",
+//                    FieldValue.arrayUnion(targetUserId)
+//                )
+//
+//                // Tambah currentUserId ke followers list target user
+//                batch.update(
+//                    usersCollection.document(targetUserId),
+//                    "followers",
+//                    FieldValue.arrayUnion(currentUserId)
+//                )
+//            }.await()
+//        } catch (e: Exception) {
+//            throw Exception("Gagal follow user: ${e.message}")
+//        }
+//    }
+//
+//    override suspend fun unfollowUser(targetUserId: String) {
+//        val currentUserId = auth.currentUser?.uid
+//            ?: throw Exception("User tidak login")
+//
+//        try {
+//            db.runBatch { batch ->
+//                // Hapus targetUserId dari following list current user
+//                batch.update(
+//                    usersCollection.document(currentUserId),
+//                    "following",
+//                    FieldValue.arrayRemove(targetUserId)
+//                )
+//
+//                // Hapus currentUserId dari followers list target user
+//                batch.update(
+//                    usersCollection.document(targetUserId),
+//                    "followers",
+//                    FieldValue.arrayRemove(currentUserId)
+//                )
+//            }.await()
+//        } catch (e: Exception) {
+//            throw Exception("Gagal unfollow user: ${e.message}")
+//        }
+//    }
 
-        if (currentUserId == targetUserId) {
-            throw Exception("Tidak bisa follow diri sendiri")
-        }
+//    override suspend fun isFollowing(targetUserId: String): Boolean {
+//        val currentUserId = auth.currentUser?.uid ?: return false
+//
+//        return try {
+//            val user = getUserById(currentUserId)
+//            user.following.contains(targetUserId)
+//        } catch (e: Exception) {
+//            false
+//        }
+//    }
 
-        try {
-            db.runBatch { batch ->
-                // Tambah targetUserId ke following list current user
-                batch.update(
-                    usersCollection.document(currentUserId),
-                    "following",
-                    FieldValue.arrayUnion(targetUserId)
-                )
+//    override suspend fun getFollowers(uid: String): List<User> {
+//        return try {
+//            val user = getUserById(uid)
+//            val followerIds = user.followers
+//
+//            if (followerIds.isEmpty()) {
+//                emptyList()
+//            } else {
+//                // Ambil detail semua followers
+//                followerIds.mapNotNull { followerId ->
+//                    try {
+//                        getUserById(followerId)
+//                    } catch (e: Exception) {
+//                        null
+//                    }
+//                }
+//            }
+//        } catch (e: Exception) {
+//            emptyList()
+//        }
+//    }
 
-                // Tambah currentUserId ke followers list target user
-                batch.update(
-                    usersCollection.document(targetUserId),
-                    "followers",
-                    FieldValue.arrayUnion(currentUserId)
-                )
-            }.await()
-        } catch (e: Exception) {
-            throw Exception("Gagal follow user: ${e.message}")
-        }
-    }
+//    override suspend fun getFollowing(uid: String): List<User> {
+//        return try {
+//            val user = getUserById(uid)
+//            val followingIds = user.following
+//
+//            if (followingIds.isEmpty()) {
+//                emptyList()
+//            } else {
+//                // Ambil detail semua following
+//                followingIds.mapNotNull { followingId ->
+//                    try {
+//                        getUserById(followingId)
+//                    } catch (e: Exception) {
+//                        null
+//                    }
+//                }
+//            }
+//        } catch (e: Exception) {
+//            emptyList()
+//        }
+//    }
 
-    override suspend fun unfollowUser(targetUserId: String) {
-        val currentUserId = auth.currentUser?.uid
-            ?: throw Exception("User tidak login")
-
-        try {
-            db.runBatch { batch ->
-                // Hapus targetUserId dari following list current user
-                batch.update(
-                    usersCollection.document(currentUserId),
-                    "following",
-                    FieldValue.arrayRemove(targetUserId)
-                )
-
-                // Hapus currentUserId dari followers list target user
-                batch.update(
-                    usersCollection.document(targetUserId),
-                    "followers",
-                    FieldValue.arrayRemove(currentUserId)
-                )
-            }.await()
-        } catch (e: Exception) {
-            throw Exception("Gagal unfollow user: ${e.message}")
-        }
-    }
-
-    override suspend fun isFollowing(targetUserId: String): Boolean {
-        val currentUserId = auth.currentUser?.uid ?: return false
-
-        return try {
-            val user = getUserById(currentUserId)
-            user.following.contains(targetUserId)
-        } catch (e: Exception) {
-            false
-        }
-    }
-
-    override suspend fun getFollowers(uid: String): List<User> {
-        return try {
-            val user = getUserById(uid)
-            val followerIds = user.followers
-
-            if (followerIds.isEmpty()) {
-                emptyList()
-            } else {
-                // Ambil detail semua followers
-                followerIds.mapNotNull { followerId ->
-                    try {
-                        getUserById(followerId)
-                    } catch (e: Exception) {
-                        null
-                    }
-                }
-            }
-        } catch (e: Exception) {
-            emptyList()
-        }
-    }
-
-    override suspend fun getFollowing(uid: String): List<User> {
-        return try {
-            val user = getUserById(uid)
-            val followingIds = user.following
-
-            if (followingIds.isEmpty()) {
-                emptyList()
-            } else {
-                // Ambil detail semua following
-                followingIds.mapNotNull { followingId ->
-                    try {
-                        getUserById(followingId)
-                    } catch (e: Exception) {
-                        null
-                    }
-                }
-            }
-        } catch (e: Exception) {
-            emptyList()
-        }
-    }
 }

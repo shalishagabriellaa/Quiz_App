@@ -4,7 +4,12 @@ import com.example.tubes.data.model.Category
 import com.example.tubes.data.model.Quiz
 import com.example.tubes.data.model.User
 import com.example.tubes.data.model.UserQuizResult
-import com.google.firebase.Timestamp
+
+fun Category.toUi(): CategoryUi = CategoryUi(
+    id = categoryId,                // ✅ pakai slug, bukan docId random
+    name = categoryName,
+    bannerUrl = bannerUrl
+)
 
 fun Quiz.toUi(
     authorName: String,
@@ -13,37 +18,25 @@ fun Quiz.toUi(
     id = id,
     title = title,
     bannerUrl = bannerUrl,
-    questionsCount = questionCount,
+    questionsCount = totalQuestions,          // ✅ dari schema baru
     createdAt = createdAt,
     authorName = authorName,
     authorAvatarUrl = authorAvatarUrl,
-    attemptCount = attemptCount
+    attemptCount = totalParticipants          // ✅ dari schema baru (plays)
 )
 
-fun Category.toUi(): CategoryUi {
-    return CategoryUi(
-        id = this.id,
-        name = this.name,
-        bannerUrl = this.bannerUrl
-    )
-}
+fun User.toAuthorUi(): AuthorUi = AuthorUi(
+    fullName = if (fullName.isNotBlank()) fullName else "Unknown",
+    avatarUrl = avatarUrl
+)
 
-fun User.toAuthorUi(): AuthorUi {
-    return AuthorUi(
-        fullName = this.fullName ?: this.name ?: "Unknown",
-        avatarUrl = this.avatarUrl
-    )
-}
-
-fun UserQuizResult.toYourQuizUi(): YourQuizUi {
-    return YourQuizUi(
-        quizId = this.quizId,
-        title = this.quizTitle,
-        bannerUrl = this.quizBannerUrl,
-        questionsCount = this.questionsCount,
-        lastScore = this.lastScore,
-        correctAnswers = this.correctAnswers,
-        totalQuestions = this.totalQuestions,
-        lastPlayedAt = this.lastPlayedAt
-    )
-}
+fun UserQuizResult.toYourQuizUi(): YourQuizUi = YourQuizUi(
+    quizId = quizId,
+    title = quizTitle,
+    bannerUrl = quizBannerUrl,
+    questionsCount = totalQuestions,    // ✅ dulu questionsCount
+    lastScore = lastScore,
+    correctAnswers = correctAnswers,
+    totalQuestions = totalQuestions,
+    lastPlayedAt = lastPlayedAt
+)

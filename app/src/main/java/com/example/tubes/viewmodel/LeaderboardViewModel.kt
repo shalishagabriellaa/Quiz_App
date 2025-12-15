@@ -48,7 +48,7 @@ class LeaderboardViewModel(
                     LeaderboardUser(
                         id = user.uid,
                         name = user.fullName
-                            ?: user.name
+//                            ?: user.fullName
                             ?: user.email.substringBefore("@"),
 
                         // 🔥 PENTING: weeklyScore untuk tab Weekly, totalScore untuk All Time

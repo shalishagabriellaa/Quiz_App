@@ -8,9 +8,9 @@ interface ProfileRepository {
     suspend fun getQuizAttemptsCount(uid: String): Int
 
     // Follow system
-    suspend fun followUser(targetUserId: String)
-    suspend fun unfollowUser(targetUserId: String)
-    suspend fun isFollowing(targetUserId: String): Boolean
-    suspend fun getFollowers(uid: String): List<User>
-    suspend fun getFollowing(uid: String): List<User>
+//    suspend fun followUser(targetUserId: String)
+//    suspend fun unfollowUser(targetUserId: String)
+//    suspend fun isFollowing(targetUserId: String): Boolean
+//    suspend fun getFollowers(uid: String): List<User>
+//    suspend fun getFollowing(uid: String): List<User>
 }

@@ -49,7 +49,7 @@ class CategorySpecifyViewModel(
                 // 3. Mapping ke QuizUi
                 val quizUiList: List<QuizUi> = quizzes.map { quiz ->
                     val author = authorCache[quiz.authorId]
-                    val authorName = author?.fullName ?: author?.name ?: "Unknown"
+                    val authorName = author?.fullName ?: author?.fullName ?: "Unknown"
                     val avatarUrl = author?.avatarUrl
 
                     quiz.toUi(

@@ -39,13 +39,13 @@ class ProfileViewModel(private val repository: ProfileRepository) : ViewModel() 
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        userName = user.fullName ?: user.name ?: "Name Unknown",
+                        userName = user.fullName ?: "Name Unknown",
                         userEmail = user.email,
                         avatarUrl = user.avatarUrl.orEmpty(),
                         totalPoints = user.totalScore.toInt(),
                         quizzesCompleted = playsCount,
-                        followersCount = user.followers.size,
-                        followingCount = user.following.size,
+//                        followersCount = user.followers.size,
+//                        followingCount = user.following.size,
                         rank = 0 // TODO: Implement ranking logic if needed
                     )
                 }
@@ -63,8 +63,8 @@ class ProfileViewModel(private val repository: ProfileRepository) : ViewModel() 
     fun followUser(targetUserId: String) {
         viewModelScope.launch {
             try {
-                repository.followUser(targetUserId)
-                loadProfile() // Refresh untuk update count
+//                repository.followUser(targetUserId)
+//                loadProfile() // Refresh untuk update count
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(error = e.message)
@@ -76,8 +76,8 @@ class ProfileViewModel(private val repository: ProfileRepository) : ViewModel() 
     fun unfollowUser(targetUserId: String) {
         viewModelScope.launch {
             try {
-                repository.unfollowUser(targetUserId)
-                loadProfile() // Refresh untuk update count
+//                repository.unfollowUser(targetUserId)
+//                loadProfile() // Refresh untuk update count
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(error = e.message)

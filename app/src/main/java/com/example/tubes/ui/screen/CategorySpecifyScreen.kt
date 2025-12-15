@@ -68,7 +68,9 @@ fun CategorySpecifyScreen(
                 // 3. Mapping ke QuizUi
                 val quizUiList: List<QuizUi> = quizzes.map { quiz ->
                     val author = authorCache[quiz.authorId]
-                    val authorName = author?.fullName ?: author?.name ?: "Unknown"
+                    val authorName = author?.fullName?.takeIf { it.isNotBlank() }
+                        ?: author?.email?.substringBefore("@")
+                        ?: "Unknown"
                     val avatarUrl = author?.avatarUrl
 
                     quiz.toUi(
@@ -77,9 +79,8 @@ fun CategorySpecifyScreen(
                     )
                 }
 
-                // 4. Ambil category untuk banner
                 val allCategories = repo.getCategories()
-                val thisCategory = allCategories.firstOrNull { it.id == categoryId }
+                val thisCategory = allCategories.firstOrNull { it.categoryId == categoryId }
 
                 uiState = CategorySpecifyUiState(
                     isLoading = false,
