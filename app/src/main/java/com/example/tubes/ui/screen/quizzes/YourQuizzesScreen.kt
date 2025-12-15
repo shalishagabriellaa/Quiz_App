@@ -6,7 +6,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -15,12 +14,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.tubes.ui.screen.home.YourQuizRow
 import com.example.tubes.viewmodel.YourQuizzesViewModel
-import com.example.tubes.viewmodel.YourQuizzesUiState
 
-// warna sama seperti sebelumnya
 private val DeepBlue = Color(0xFF162471)
 private val LightBackground = Color(0xFFF5F5F5)
 
@@ -29,7 +25,12 @@ private val LightBackground = Color(0xFFF5F5F5)
 fun YourQuizzesScreen(
     userId: String,
     onBackClick: () -> Unit,
-    onResultClick: (String) -> Unit,          // 🔹 buka detail hasil
+    /**
+     * IMPORTANT:
+     * Ini harus diarahkan ke preview jawaban+pembahasan (answerExplanation/{quizId}),
+     * bukan start quiz lagi.
+     */
+    onResultClick: (String) -> Unit,
     viewModel: YourQuizzesViewModel
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -57,18 +58,7 @@ fun YourQuizzesScreen(
                         )
                     }
                 },
-//                actions = {
-//                    IconButton(onClick = { /* TODO: search history quiz */ }) {
-//                        Icon(
-//                            Icons.Filled.Search,
-//                            contentDescription = "Search",
-//                            tint = Color.White
-//                        )
-//                    }
-//                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = DeepBlue
-                )
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = DeepBlue)
             )
         }
     ) { padding ->
@@ -121,7 +111,10 @@ fun YourQuizzesScreen(
                         items(uiState.quizzes) { item ->
                             YourQuizRow(
                                 q = item,
-                                onClick = { onResultClick(item.quizId) } // 🔹 buka detail
+                                onClick = {
+                                    // ✅ klik item -> preview jawaban+pembahasan
+                                    onResultClick(item.quizId)
+                                }
                             )
                         }
                     }

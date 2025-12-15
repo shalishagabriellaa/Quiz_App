@@ -39,9 +39,15 @@ fun HomeSection(
     onCategoryClick: (CategoryUi) -> Unit = {},
     onTrendingSeeAll: () -> Unit = {},
     onTrendingClick: (String) -> Unit = {},
-    onTopAuthorsSeeAll: () -> Unit = {},          // 🔹 BARU
-    onYourQuizSeeAll: () -> Unit = {},            // 🔹 BARU
-    onYourQuizClick: (String) -> Unit = {}        // 🔹 klik item your quiz
+    onTopAuthorsSeeAll: () -> Unit = {},
+    onYourQuizSeeAll: () -> Unit = {},
+
+    /**
+     * IMPORTANT:
+     * Ini harus diarahkan ke halaman PREVIEW jawaban + pembahasan (answerExplanation/{quizId}),
+     * bukan start quiz lagi.
+     */
+    onYourQuizClick: (String) -> Unit = {}
 ) {
     Column(
         modifier = modifier
@@ -105,7 +111,7 @@ fun HomeSection(
                 )
                 Spacer(Modifier.height(12.dp))
                 Button(
-                    onClick = { /* TODO: invite friends */ },
+                    onClick = { /* TODO */ },
                     shape = RoundedCornerShape(50),
                     colors = ButtonDefaults.buttonColors(containerColor = Color.White)
                 ) { Text("Find Friends", color = Color(0xFF27459F)) }
@@ -140,7 +146,7 @@ fun HomeSection(
             items(trending) { quiz ->
                 QuizLargeCard(
                     q = quiz,
-                    onClick = { onTrendingClick(quiz.id) }
+                    onClick = { onTrendingClick(quiz.id) } // trending tetap start quiz (testInfo)
                 )
             }
         }
@@ -150,7 +156,7 @@ fun HomeSection(
         /* ---------- Top Authors ---------- */
         SectionHeader(
             title = "Top Authors",
-            onSeeAll = onTopAuthorsSeeAll       // 🔹 SEKARANG ADA SEE ALL
+            onSeeAll = onTopAuthorsSeeAll
         )
         Spacer(Modifier.height(12.dp))
         LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -196,7 +202,10 @@ fun HomeSection(
             displayedQuizzes.forEach { item ->
                 YourQuizRow(
                     q = item,
-                    onClick = { onYourQuizClick(item.quizId) }
+                    onClick = {
+                        // Ini yang harus menuju preview jawaban+pembahasan
+                        onYourQuizClick(item.quizId)
+                    }
                 )
             }
         }

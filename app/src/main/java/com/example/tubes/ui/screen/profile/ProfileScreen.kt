@@ -21,6 +21,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.tubes.viewmodel.ProfileViewModel
+import androidx.compose.ui.platform.LocalContext
+import coil.request.ImageRequest
 
 // Colors
 private val DeepBlue = Color(0xFF0E1C6B)
@@ -231,15 +233,27 @@ private fun ProfileHeader(
     onFollowersClick: () -> Unit,
     onFollowingClick: () -> Unit
 ) {
+    val context = LocalContext.current
+
+    // ✅ bikin URL cloudinary lebih ringan + rapi (kalau memang cloudinary)
+    val finalAvatarUrl = remember(avatarUrl) {
+        avatarUrl.toCloudinaryAvatarUrl(
+            size = 300, // px
+            fallback = "https://via.placeholder.com/200"
+        )
+    }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(top = 16.dp, start = 24.dp, end = 24.dp, bottom = 32.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Avatar
         AsyncImage(
-            model = avatarUrl.ifEmpty { "https://via.placeholder.com/200" },
+            model = ImageRequest.Builder(context)
+                .data(finalAvatarUrl)
+                .crossfade(true)
+                .build(),
             contentDescription = "Profile picture",
             modifier = Modifier
                 .size(100.dp)
@@ -250,7 +264,6 @@ private fun ProfileHeader(
 
         Spacer(Modifier.height(16.dp))
 
-        // Name
         Text(
             text = userName,
             fontSize = 24.sp,
@@ -260,7 +273,6 @@ private fun ProfileHeader(
 
         Spacer(Modifier.height(4.dp))
 
-        // Email
         Text(
             text = userEmail,
             fontSize = 14.sp,
@@ -269,7 +281,6 @@ private fun ProfileHeader(
 
         Spacer(Modifier.height(24.dp))
 
-        // Stats Row (hanya Followers & Following)
         Row(
             modifier = Modifier.fillMaxWidth(0.6f),
             horizontalArrangement = Arrangement.SpaceEvenly,
@@ -432,5 +443,31 @@ private fun Int.formatPoints(): String {
         this >= 1000000 -> String.format("%.1fM", this / 1000.0).replace(".0", "")
         this >= 1000 -> String.format("%.1fK", this / 1000.0).replace(".0", "")
         else -> this.toString()
+    }
+}
+
+private fun String?.toCloudinaryAvatarUrl(
+    size: Int = 300,
+    fallback: String
+): String {
+    val raw = this?.trim().orEmpty()
+    if (raw.isEmpty()) return fallback
+
+    // pastiin https
+    val httpsUrl = if (raw.startsWith("http://")) raw.replaceFirst("http://", "https://") else raw
+
+    // kalau bukan cloudinary, tetap pakai apa adanya
+    if (!httpsUrl.contains("res.cloudinary.com")) return httpsUrl
+
+    // Cloudinary URL biasa punya segmen: /image/upload/
+    // Kita sisipkan transform: f_auto,q_auto,c_fill,g_face,w_{size},h_{size}
+    return if (httpsUrl.contains("/image/upload/")) {
+        httpsUrl.replace(
+            "/image/upload/",
+            "/image/upload/f_auto,q_auto,c_fill,g_face,w_${size},h_${size}/"
+        )
+    } else {
+        // fallback kalau format URL-nya beda
+        httpsUrl
     }
 }

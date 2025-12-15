@@ -38,6 +38,10 @@ import com.example.tubes.ui.screen.profile.ProfileScreen
 import com.example.tubes.ui.screen.profile.FollowersScreen
 import com.example.tubes.ui.screen.profile.FollowingScreen
 import com.example.tubes.ui.screen.quizzes.YourQuizzesScreen
+import com.example.tubes.ui.screen.setting.AboutQuorriScreen
+import com.example.tubes.ui.screen.setting.ChangePasswordScreen
+import com.example.tubes.ui.screen.setting.HelpCenterScreen
+import com.example.tubes.ui.screen.setting.PersonalInfoScreen
 import com.example.tubes.viewmodel.*
 import com.example.tubes.ui.screen.setting.SettingScreen
 
@@ -169,8 +173,63 @@ fun StudentNavigation() {
 
         // ===== SETTINGS =====
         composable(Screen.SettingScreen.route) {
-            // ✅ sekarang semua setting menuju page.screen.setting.SettingScreen
-            SettingScreen()
+            SettingScreen(
+                onBack = { navController.popBackStack() },
+                onPersonalInfo = { navController.navigate("personalInfo") },
+                onChangePassword = { navController.navigate("changePassword") },
+                onHelpCenter = { navController.navigate("helpCenter") },
+                onAboutQuorri = { navController.navigate("aboutQuorri") },
+                onLogout = {
+                    authViewModel.logout()
+                    navController.navigate(Screen.LoginScreen.route) {
+                        popUpTo(0) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        // 🆕 ===== PERSONAL INFO =====
+        composable("personalInfo") {
+            val context = androidx.compose.ui.platform.LocalContext.current
+            val personalInfoViewModel: PersonalInfoViewModel = viewModel(
+                factory = PersonalInfoViewModelFactory(context)
+            )
+
+            PersonalInfoScreen(
+                viewModel = personalInfoViewModel,
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        // 🆕 ===== CHANGE PASSWORD =====
+        composable("changePassword") {
+            ChangePasswordScreen(
+                onBack = { navController.popBackStack() },
+                onUpdatePassword = { current, new, confirm ->
+                    // TODO: Implement password update with Firebase Auth
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        // 🆕 ===== HELP CENTER =====
+        composable("helpCenter") {
+            HelpCenterScreen(
+                onBack = { navController.popBackStack() },
+                onContactSupport = {
+                    // TODO: Open email or support form
+                }
+            )
+        }
+
+        // 🆕 ===== ABOUT QUORRI =====
+        composable("aboutQuorri") {
+            AboutQuorriScreen(
+                onBack = { navController.popBackStack() },
+                onContactUs = {
+                    // TODO: Open email or support form
+                }
+            )
         }
 
         // ===== QUIZ SCREEN =====
@@ -410,10 +469,7 @@ private fun MainScreenWithBottomNav(
                                 onQR = { showQrScanner = true },
                                 onLeaderboard = { bottomNavController.navigate("leaderboard") },
                                 onProfile = { bottomNavController.navigate("profile") },
-
-                                // ✅ SEMUA SETTINGS -> Screen.SettingScreen.route -> page.screen.setting.SettingScreen()
                                 onSettings = { navController.navigate(Screen.SettingScreen.route) },
-
                                 onSearchQuizCode = { code ->
                                     homeViewModel.searchQuizByCode(code) { quizId ->
                                         navController.navigate("testInfo/$quizId")
@@ -431,9 +487,7 @@ private fun MainScreenWithBottomNav(
                                 },
                                 onTopAuthorsSeeAll = { navController.navigate("topAuthors") },
                                 onYourQuizSeeAll = { bottomNavController.navigate("quizzes") },
-                                onYourQuizClick = { quizId ->
-                                    navController.navigate("testInfo/$quizId")
-                                }
+                                onYourQuizClick = { quizId -> navController.navigate("answerExplanation/$quizId") }
                             )
                         }
                     }
@@ -445,17 +499,14 @@ private fun MainScreenWithBottomNav(
                         YourQuizzesScreen(
                             userId = userId,
                             onBackClick = { bottomNavController.navigate("home") },
-                            onResultClick = { quizId ->
-                                navController.navigate("answerExplanation/$quizId")
-                            },
-                            viewModel = yourQuizzesViewModel
+                            onResultClick = { quizId -> navController.navigate("answerExplanation/$quizId") },
+                                    viewModel = yourQuizzesViewModel
                         )
                     }
 
                     composable("leaderboard") {
                         LeaderboardScreen(
                             viewModel = leaderboardViewModel,
-                            // ✅ settings dari leaderboard juga ke SettingScreen yg sama
                             onSettings = { navController.navigate(Screen.SettingScreen.route) }
                         )
                     }
@@ -471,13 +522,6 @@ private fun MainScreenWithBottomNav(
                         ProfileScreen(
                             viewModel = profileViewModel,
                             onBackClick = { bottomNavController.navigate("home") },
-                            onLogout = {
-                                authViewModel.logout()
-                                navController.navigate(Screen.LoginScreen.route) {
-                                    popUpTo(0) { inclusive = true }
-                                }
-                            },
-                            // ✅ settings dari profile juga ke SettingScreen yg sama
                             onNavigateToSettings = {
                                 navController.navigate(Screen.SettingScreen.route)
                             },
@@ -615,6 +659,7 @@ private fun QrScannerOverlay(
 
                 Spacer(Modifier.height(16.dp))
 
+                // simulasi scan (untuk test)
                 Button(onClick = { onCodeScanned("DUMMY_CODE") }) {
                     Text("Simulate Scan")
                 }
