@@ -47,43 +47,43 @@ fun ProfileScreen(
     }
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {},
-                navigationIcon = {},
-                actions = {
-                    // Edit Button di kanan atas
-                    Button(
-                        onClick = { /* TODO: Edit profile */ },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color.White
-                        ),
-                        shape = RoundedCornerShape(20.dp),
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                        modifier = Modifier
-                            .height(36.dp)
-                            .padding(end = 8.dp)
-                    ) {
-                        Icon(
-                            Icons.Filled.Edit,
-                            contentDescription = "Edit",
-                            tint = DeepBlue,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(Modifier.width(4.dp))
-                        Text(
-                            "Edit",
-                            color = DeepBlue,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = DeepBlue
-                )
-            )
-        }
+//        topBar = {
+//            TopAppBar(
+//                title = {},
+//                navigationIcon = {},
+//                actions = {
+//                    // Edit Button di kanan atas
+//                    Button(
+//                        onClick = { /* TODO: Edit profile */ },
+//                        colors = ButtonDefaults.buttonColors(
+//                            containerColor = Color.White
+//                        ),
+//                        shape = RoundedCornerShape(20.dp),
+//                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+//                        modifier = Modifier
+//                            .height(36.dp)
+//                            .padding(end = 8.dp)
+//                    ) {
+//                        Icon(
+//                            Icons.Filled.Edit,
+//                            contentDescription = "Edit",
+//                            tint = DeepBlue,
+//                            modifier = Modifier.size(16.dp)
+//                        )
+//                        Spacer(Modifier.width(4.dp))
+//                        Text(
+//                            "Edit",
+//                            color = DeepBlue,
+//                            fontSize = 14.sp,
+//                            fontWeight = FontWeight.Medium
+//                        )
+//                    }
+//                },
+//                colors = TopAppBarDefaults.topAppBarColors(
+//                    containerColor = DeepBlue
+//                )
+//            )
+//        }
     ) { paddingValues ->
         Box(
             modifier = Modifier

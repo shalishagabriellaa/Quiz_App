@@ -203,11 +203,19 @@ fun StudentNavigation() {
 
         // 🆕 ===== CHANGE PASSWORD =====
         composable("changePassword") {
+            val vm: com.example.tubes.viewmodel.ChangePasswordViewModel = viewModel(
+                factory = com.example.tubes.viewmodel.ChangePasswordViewModelFactory()
+            )
+
             ChangePasswordScreen(
+                viewModel = vm,
                 onBack = { navController.popBackStack() },
-                onUpdatePassword = { current, new, confirm ->
-                    // TODO: Implement password update with Firebase Auth
-                    navController.popBackStack()
+                onLoggedOut = {
+                    // ✅ balikin ke Login dan hapus semua backstack
+                    navController.navigate(Screen.LoginScreen.route) {
+                        popUpTo(0) { inclusive = true }
+                        launchSingleTop = true
+                    }
                 }
             )
         }
