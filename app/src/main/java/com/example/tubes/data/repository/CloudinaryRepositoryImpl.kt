@@ -11,4 +11,9 @@ class CloudinaryRepositoryImpl(
     override suspend fun uploadAvatar(uri: Uri): String {
         return cloudinary.uploadImage(uri)
     }
+
+    override suspend fun uploadImage(uri: Uri): String {
+        return cloudinary.uploadImage(uri)
+
+    }
 }

@@ -30,7 +30,6 @@ fun QuizScreen(
     quizId: String,
     viewModel: QuizViewModel,
     onBackClick: () -> Unit,
-    // Callback disederhanakan: hanya memberitahu "kuis selesai"
     onQuizComplete: () -> Unit,
     onViewExplanation: (quizId: String) -> Unit,
     userId: String?

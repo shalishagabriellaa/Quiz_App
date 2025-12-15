@@ -35,6 +35,17 @@ android {
             "GOOGLE_CLIENT_ID",
             "\"${props.getProperty("GOOGLE_CLIENT_ID")}\""
         )
+        buildConfigField("String", "CLOUDINARY_NAME",
+        "\"${props.getProperty("cloudinary.name")}\""
+        )
+
+        buildConfigField("String", "CLOUDINARY_API_KEY",
+        "\"${props.getProperty("cloudinary.apiKey")}\""
+        )
+
+        buildConfigField("String", "CLOUDINARY_API_SECRET",
+        "\"${props.getProperty("cloudinary.apiSecret")}\""
+        )
     }
 
 
@@ -95,6 +106,7 @@ dependencies {
     implementation("com.google.android.gms:play-services-auth:21.2.0") // Versi stabil umum
     implementation("com.cloudinary:cloudinary-android:2.3.1")
     implementation("io.coil-kt:coil-compose:2.6.0")
+    implementation(libs.androidx.material3)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

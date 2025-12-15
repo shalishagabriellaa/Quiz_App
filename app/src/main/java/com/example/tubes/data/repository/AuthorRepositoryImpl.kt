@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.callbackFlow
 
 class AuthorRepositoryImpl(
     private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
-) : AuthorRepository { // <-- Mengimplementasikan interface dari domain
+) : AuthorRepository {
 
     companion object {
         private const val TAG = "AuthorRepositoryImpl"
@@ -19,7 +19,6 @@ class AuthorRepositoryImpl(
     }
 
     override fun getAuthorStats(authorId: String): Flow<Result<AuthorStats>> = callbackFlow {
-        // Menggunakan callbackFlow untuk mendapatkan update data secara real-time dari Firestore
         if (authorId.isEmpty()) {
             Log.w(TAG, "Author ID is empty. Closing flow.")
             trySend(Result.failure(IllegalArgumentException("Author ID cannot be empty.")))
@@ -37,15 +36,12 @@ class AuthorRepositoryImpl(
                     return@addSnapshotListener
                 }
 
-                // Gunakan properti .isEmpty langsung dari snapshot
                 if (snapshot == null || snapshot.isEmpty) {
                     Log.w(TAG, "No quizzes found for author: $authorId")
                     trySend(Result.success(AuthorStats())) // Kirim statistik kosong jika tidak ada data
                     return@addSnapshotListener
                 }
 
-                // Kalkulasi statistik dari data yang diterima
-                // Gunakan properti .size langsung dari snapshot
                 val totalQuizzes = snapshot.size()
                 var totalParticipants: Long = 0
                 var cumulativeScore: Double = 0.0
@@ -53,8 +49,6 @@ class AuthorRepositoryImpl(
 
                 for (document in snapshot.documents) {
                     totalParticipants += document.getLong("totalParticipants") ?: 0L
-
-                    // Kalkulasi yang lebih aman: (averageScore * attemptCount) untuk mendapatkan total skor kuis itu
                     val quizAverageScore = document.getDouble("averageScore") ?: 0.0
                     val quizAttemptCount = document.getLong("attemptCount") ?: 0L
                     cumulativeScore += quizAverageScore * quizAttemptCount
@@ -79,9 +73,6 @@ class AuthorRepositoryImpl(
                 Log.d(TAG, "Stats updated for author $authorId: $stats")
                 trySend(Result.success(stats)) // Kirim data statistik yang sudah dihitung ke Flow
             }
-
-        // Blok ini akan dieksekusi saat Flow dibatalkan (misal: ViewModel hancur)
-        // Fungsinya untuk menghentikan listener Firestore agar tidak terjadi memory leak.
         awaitClose { listenerRegistration.remove() }
     }
 }
