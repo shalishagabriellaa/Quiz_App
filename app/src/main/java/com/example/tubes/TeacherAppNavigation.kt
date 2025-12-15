@@ -22,12 +22,16 @@ import androidx.navigation.navArgument
 import com.example.tubes.data.AuthState
 import com.example.tubes.data.cloudinary.CloudinaryManager
 import com.example.tubes.data.repository.CloudinaryRepositoryImpl
+import com.example.tubes.data.repository.TeacherAnalyticsRepositoryImpl
+import com.example.tubes.data.repository.TeacherProfileRepositoryImpl
 import com.example.tubes.data.repository.TeacherQuestionBankRepositoryImpl
 import com.example.tubes.data.repository.TeacherQuestionRepositoryImpl
 import com.example.tubes.data.repository.TeacherQuizRepositoryImpl
 import com.example.tubes.ui.screen.teacher.QuizPreviewScreen
 import com.example.tubes.ui.screen.teacher.TeacherAddQuestionScreen
+import com.example.tubes.ui.screen.teacher.TeacherAnalyticsScreen
 import com.example.tubes.ui.screen.teacher.TeacherCreateQuizScreen
+import com.example.tubes.ui.screen.teacher.TeacherProfileScreen
 import com.example.tubes.ui.screen.teacher.TeacherQuestionBankScreen
 import com.example.tubes.ui.screen.teacher.TeacherQuizListScreen
 import com.example.tubes.ui.teacher.TeacherDashboard
@@ -35,8 +39,12 @@ import com.example.tubes.ui.teacher.components.TeacherBottomNavigation
 import com.example.tubes.viewmodel.AuthViewModel
 import com.example.tubes.viewmodel.TeacherAddQuestionViewModel
 import com.example.tubes.viewmodel.TeacherAddQuestionViewModelFactory
+import com.example.tubes.viewmodel.TeacherAnalyticsViewModel
+import com.example.tubes.viewmodel.TeacherAnalyticsViewModelFactory
 import com.example.tubes.viewmodel.TeacherCreateQuizViewModel
 import com.example.tubes.viewmodel.TeacherCreateQuizViewModelFactory
+import com.example.tubes.viewmodel.TeacherProfileViewModel
+import com.example.tubes.viewmodel.TeacherProfileViewModelFactory
 import com.example.tubes.viewmodel.TeacherQuestionBankViewModel
 import com.example.tubes.viewmodel.TeacherQuestionBankViewModelFactory
 import com.example.tubes.viewmodel.TeacherQuizListViewModel
@@ -121,44 +129,6 @@ fun TeacherAppNavigation(
                 }
             }
 
-            // CREATE QUIZ
-            composable(TeacherRoute.QuizCreate.route) { backStackEntry ->
-
-                val cloudinaryManager = CloudinaryManager(
-                    cloudName = BuildConfig.CLOUDINARY_NAME,
-                    apiKey = BuildConfig.CLOUDINARY_API_KEY,
-                    apiSecret = BuildConfig.CLOUDINARY_API_SECRET
-                )
-
-                val quizRepo = TeacherQuizRepositoryImpl(
-                    FirebaseFirestore.getInstance()
-                )
-
-                val cloudinaryRepo =
-                    CloudinaryRepositoryImpl(cloudinaryManager)
-
-                val viewModel: TeacherCreateQuizViewModel =
-                    viewModel(
-                        backStackEntry,
-                        factory = TeacherCreateQuizViewModelFactory(
-                            quizRepo,
-                            cloudinaryRepo
-                        )
-                    )
-
-                TeacherCreateQuizScreen(
-                    authorId = authorId!!,
-                    viewModel = viewModel,
-                    onNavigateToAddQuestions = { quizId, totalQuestions ->
-                        navController.navigate(
-                            TeacherRoute.QuizAddQuestions.createRoute(
-                                quizId,
-                                totalQuestions
-                            )
-                        )
-                    }
-                )
-            }
 
             // ADD QUESTIONS
             composable(
@@ -293,15 +263,54 @@ fun TeacherAppNavigation(
                 }
             }
 
-            composable(TeacherRoute.Monitoring.route) {
-                PlaceholderScreen("Monitoring")
+            composable(TeacherRoute.Monitoring.route) { backStackEntry ->
+
+                if (authorId != null) {
+
+                    val repo = remember {
+                        TeacherAnalyticsRepositoryImpl(
+                            FirebaseFirestore.getInstance()
+                        )
+                    }
+
+                    val viewModel: TeacherAnalyticsViewModel =
+                        viewModel {
+                            TeacherAnalyticsViewModel(
+                                repository = repo,
+                                authorId = authorId
+                            )
+                        }
+
+                    TeacherAnalyticsScreen(
+                        viewModel = viewModel
+                    )
+                }
             }
-            composable(TeacherRoute.Profile.route) {
-                PlaceholderScreen("Profile")
+            composable(TeacherRoute.Profile.route) { backStackEntry ->
+
+                if (authorId == null) return@composable
+
+                val repo = TeacherProfileRepositoryImpl(
+                    FirebaseFirestore.getInstance()
+                )
+
+                val viewModel: TeacherProfileViewModel =
+                    viewModel(
+                        backStackEntry,
+                        factory = TeacherProfileViewModelFactory(
+                            repository = repo,
+                            authorId = authorId
+                        )
+                    )
+
+                TeacherProfileScreen(
+                    viewModel = viewModel
+                )
             }
         }
     }
 }
+
 
 @Composable
 fun PlaceholderScreen(title: String) {

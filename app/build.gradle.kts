@@ -106,6 +106,7 @@ dependencies {
     implementation("com.google.android.gms:play-services-auth:21.2.0") // Versi stabil umum
     implementation("com.cloudinary:cloudinary-android:2.3.1")
     implementation("io.coil-kt:coil-compose:2.6.0")
+    implementation("com.patrykandpatrick.vico:compose:1.14.0")
     implementation(libs.androidx.material3)
 
     testImplementation(libs.junit)
@@ -115,6 +116,7 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
+
 
 
 }
