@@ -35,10 +35,10 @@ private val LightBackground = Color(0xFFF5F5F5)
 @Composable
 fun TeacherProfileScreen(
     viewModel: TeacherProfileViewModel,
-    onPersonalInfo: () -> Unit = {},
-    onChangePassword: () -> Unit = {},
-    onAboutQuorri: () -> Unit = {},
-    onLogout: () -> Unit = {}
+    onPersonalInfo: () -> Unit,
+    onChangePassword: () -> Unit,
+    onAboutQuorri: () -> Unit,
+    onLogout: () -> Unit
 ) {
     val state by viewModel.uiState.collectAsState()
 
@@ -100,14 +100,13 @@ fun TeacherProfileScreen(
                 .padding(horizontal = 20.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-
-            // ===== 1) HEADER PROFILE (tetap ada) =====
+            // ===== 1) HEADER PROFILE =====
             ProfileHeaderCard(
                 fullName = state.fullName,
                 avatarUrl = state.avatarUrl
             )
 
-            // ===== 2) STATS (tetap ada) =====
+            // ===== 2) STATS =====
             state.stats?.let {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -126,17 +125,13 @@ fun TeacherProfileScreen(
                 }
             }
 
-            // ===== 3) RECENT ACTIVITIES (tetap ada) =====
-            RecentActivitiesCard(
-                quizzes = state.recentQuizzes
-            )
+            // ===== 3) RECENT ACTIVITIES =====
+            RecentActivitiesCard(quizzes = state.recentQuizzes)
 
-            // ===== 4) WEEKLY CHART (tetap ada) =====
-            WeeklyChartCard(
-                weeklyQuizCount = state.weeklyQuizCount
-            )
+            // ===== 4) WEEKLY CHART =====
+            WeeklyChartCard(weeklyQuizCount = state.weeklyQuizCount)
 
-            // ===== 5) MENU SETTINGS (fitur baru) =====
+            // ===== 5) ACCOUNT MENU =====
             Text(
                 text = "Account",
                 fontWeight = FontWeight.Bold,
@@ -183,10 +178,6 @@ fun TeacherProfileScreen(
     }
 }
 
-/* =========================
-   HEADER CARD
-   ========================= */
-
 @Composable
 private fun ProfileHeaderCard(
     fullName: String,
@@ -204,7 +195,6 @@ private fun ProfileHeaderCard(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-
             AsyncImage(
                 model = avatarUrl ?: "",
                 contentDescription = "Profile Picture",
@@ -236,10 +226,6 @@ private fun ProfileHeaderCard(
         }
     }
 }
-
-/* =========================
-   STATS CARD
-   ========================= */
 
 @Composable
 private fun ProfileStatCardModern(
@@ -274,10 +260,6 @@ private fun ProfileStatCardModern(
         }
     }
 }
-
-/* =========================
-   RECENT ACTIVITIES
-   ========================= */
 
 @Composable
 private fun RecentActivitiesCard(
@@ -355,10 +337,6 @@ private fun RecentQuizRow(
     }
 }
 
-/* =========================
-   WEEKLY CHART
-   ========================= */
-
 @Composable
 private fun WeeklyChartCard(
     weeklyQuizCount: List<Int>
@@ -433,10 +411,6 @@ private fun WeeklyQuizBarChart(
     }
 }
 
-/* =========================
-   SETTING MENU ITEM (reusable)
-   ========================= */
-
 @Composable
 private fun SettingMenuItem(
     icon: ImageVector,
@@ -483,12 +457,6 @@ private fun SettingMenuItem(
                 fontWeight = FontWeight.Medium,
                 color = textColor,
                 modifier = Modifier.weight(1f)
-            )
-
-            Icon(
-                Icons.Filled.ChevronRight,
-                contentDescription = "Go",
-                tint = Color.Gray
             )
         }
     }
