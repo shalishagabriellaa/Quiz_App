@@ -10,6 +10,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -26,6 +27,7 @@ import com.example.tubes.data.repository.TeacherProfileRepositoryImpl
 import com.example.tubes.data.repository.TeacherQuestionBankRepositoryImpl
 import com.example.tubes.data.repository.TeacherQuestionRepositoryImpl
 import com.example.tubes.data.repository.TeacherQuizRepositoryImpl
+import com.example.tubes.ui.screen.setting.AboutQuorriScreen
 import com.example.tubes.ui.screen.teacher.QuizPreviewScreen
 import com.example.tubes.ui.screen.teacher.TeacherAddQuestionScreen
 import com.example.tubes.ui.screen.teacher.TeacherAnalyticsScreen
@@ -56,7 +58,14 @@ import com.example.tubes.viewmodel.TeacherQuizListViewModelFactory
 import com.example.tubes.viewmodel.TeacherQuizQrViewModel
 import com.example.tubes.viewmodel.TeacherQuizQrViewModelFactory
 import com.google.firebase.firestore.FirebaseFirestore
-
+import com.example.tubes.ui.screen.teacher.TeacherPersonalInfoScreen
+import com.example.tubes.ui.screen.teacher.TeacherChangePasswordScreen
+import com.example.tubes.viewmodel.PersonalInfoViewModel
+import com.example.tubes.viewmodel.PersonalInfoViewModelFactory
+import com.example.tubes.viewmodel.ChangePasswordViewModel
+import com.example.tubes.viewmodel.ChangePasswordViewModelFactory
+import com.example.tubes.ui.screen.teacher.TeacherChangePasswordScreen
+import com.example.tubes.ui.screen.teacher.TeacherPersonalInfoScreen
 @Composable
 fun TeacherAppNavigation(
     authViewModel: AuthViewModel = viewModel()
@@ -353,7 +362,65 @@ fun TeacherAppNavigation(
                         )
                     )
 
-                TeacherProfileScreen(viewModel = viewModel)
+                TeacherProfileScreen(
+                    viewModel = viewModel,
+                    onPersonalInfo = { navController.navigate(TeacherRoute.PersonalInfo.route) },
+                    onChangePassword = { navController.navigate(TeacherRoute.ChangePassword.route) },
+                    onAboutQuorri = { navController.navigate(TeacherRoute.AboutQuorri.route) },
+                    onLogout = {
+                        authViewModel.logout()
+                        navController.navigate(Screen.LoginScreen.route) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    }
+                )
+            }
+
+            // ================= TEACHER PERSONAL INFO =================
+            composable(TeacherRoute.PersonalInfo.route) { backStackEntry ->
+                val context = LocalContext.current
+
+                val vm: PersonalInfoViewModel =
+                    viewModel(
+                        backStackEntry,
+                        factory = PersonalInfoViewModelFactory(context)
+                    )
+
+                TeacherPersonalInfoScreen(
+                    viewModel = vm,
+                    onBack = { navController.popBackStack() }
+                )
+            }
+
+// ================= TEACHER CHANGE PASSWORD =================
+            composable(TeacherRoute.ChangePassword.route) { backStackEntry ->
+                val vm: ChangePasswordViewModel =
+                    viewModel(
+                        backStackEntry,
+                        factory = ChangePasswordViewModelFactory()
+                    )
+
+                TeacherChangePasswordScreen(
+                    viewModel = vm,
+                    onBack = { navController.popBackStack() },
+                    onLoggedOut = {
+                        // ✅ pastikan authViewModel juga logout (bukan cuma FirebaseAuth.signOut di ChangePasswordVM)
+                        authViewModel.logout()
+
+                        // ✅ balik ke dashboard / atau nanti bisa arahkan ke login screen kamu
+                        navController.navigate(TeacherRoute.Dashboard.route) {
+                            popUpTo(TeacherRoute.Dashboard.route) { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    }
+                )
+            }
+
+// ================= ABOUT QUORRI =================
+            composable(TeacherRoute.AboutQuorri.route) {
+                AboutQuorriScreen(
+                    onBack = { navController.popBackStack() }
+                )
             }
 
             // ================= NOTIFICATIONS =================
