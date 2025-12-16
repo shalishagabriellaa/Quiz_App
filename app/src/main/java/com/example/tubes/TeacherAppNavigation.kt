@@ -380,6 +380,11 @@ fun TeacherAppNavigation(
 }
 
 @Composable
+fun TeacherQuestionBankScreen(viewModel: TeacherQuestionBankViewModel) {
+    TODO("Not yet implemented")
+}
+
+@Composable
 fun PlaceholderScreen(title: String) {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Text(text = "$title Screen", color = Color.Black)
