@@ -133,18 +133,14 @@ class AuthorViewModel : ViewModel() {
                     averageQuizScore = averageScoreResult
                 )
 
-// 4. Ambil 3 Kuis untuk "Average Score per Quiz" (Tetap sama)
-                val averageScoresPerQuiz = allQuizzes.take(3)
-
-// 5. PERUBAIKAN LOGIKA: Ambil 3 Kuis Terbaru, tanpa filter waktu
-                val recentQuizzes = allQuizzes.take(3)
+                val averageScoresPerQuiz = allQuizzes
+                val recentQuizzes = allQuizzes
 
 // 6. Ambil aktivitas peserta terbaru (Logika ini tetap sama)
                 var recentSubmissions: List<ParticipantSubmission> = emptyList()
                 try {
                     val recentSubmissionsSnapshot = db.collectionGroup("quizResults")
                         .orderBy("lastPlayedAt", Query.Direction.DESCENDING)
-                        .limit(3)
                         .get()
                         .await()
 
@@ -165,9 +161,9 @@ class AuthorViewModel : ViewModel() {
                         isLoading = false,
                         authorName = authorName,
                         overallStats = overallStats,
-                        averageScoresPerQuiz = averageScoresPerQuiz,
-                        recentQuizzes = recentQuizzes,
-                        recentSubmissions = recentSubmissions,
+                        averageScoresPerQuiz = allQuizzes,      // FULL
+                        recentQuizzes = allQuizzes,              // FULL
+                        recentSubmissions = recentSubmissions,   // FULL
                         error = null
                     )
                 }

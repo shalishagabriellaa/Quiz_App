@@ -49,6 +49,8 @@ fun QuizBottomBar(
     Box(
         modifier = modifier
             .fillMaxWidth()
+            // JANGAN clip container-nya
+            .background(BarPurple)
             .shadow(
                 elevation = 12.dp,
                 shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),

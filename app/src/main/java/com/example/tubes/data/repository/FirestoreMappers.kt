@@ -22,6 +22,7 @@ fun DocumentSnapshot.toQuestionUiOrNull(): QuestionUi? {
     val correct = (getLong("correctAnswerIndex") ?: -1L).toInt()
     val explanation = getString("explanation") ?: ""
     val imageUrl = getString("imageUrl") // bisa null
+    val category = getString("category") ?: "General"
 
     return QuestionUi(
         id = this.id,
@@ -29,6 +30,7 @@ fun DocumentSnapshot.toQuestionUiOrNull(): QuestionUi? {
         options = options,
         correctAnswerIndex = correct,
         explanation = explanation,
-        imageUrl = imageUrl
+        imageUrl = imageUrl,
+        category = category
     )
 }

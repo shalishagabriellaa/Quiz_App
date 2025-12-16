@@ -1,7 +1,7 @@
 package com.example.tubes.data.model
 
 enum class Difficulty {
-    EASY, MEDIUM, HARD;
+    EASY, MEDIUM, HARD, EXTREME;
 
     companion object {
         fun fromFirestore(raw: String?): Difficulty {
@@ -9,7 +9,7 @@ enum class Difficulty {
                 "easy" -> EASY
                 "medium" -> MEDIUM
                 "hard" -> HARD
-                else -> MEDIUM
+                else -> EXTREME
             }
         }
     }

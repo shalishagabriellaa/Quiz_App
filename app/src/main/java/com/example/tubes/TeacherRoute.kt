@@ -32,4 +32,9 @@ sealed class TeacherRoute(val route: String) {
     object Notifications : TeacherRoute("notifications")
     object Monitoring : TeacherRoute("monitoring")
     object Profile : TeacherRoute("profile")
+
+    object ViewAll : TeacherRoute("teacher_view_all/{type}") {
+        fun createRoute(type: String) = "teacher_view_all/$type"
+    }
+
 }

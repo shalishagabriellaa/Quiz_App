@@ -21,10 +21,9 @@ import com.example.tubes.data.repository.HomeRepositoryImpl
 import com.journeyapps.barcodescanner.DecoratedBarcodeView
 import com.journeyapps.barcodescanner.BarcodeCallback
 import com.journeyapps.barcodescanner.BarcodeResult
-import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class, DelicateCoroutinesApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun QrScanScreen(
     onBack: () -> Unit,
