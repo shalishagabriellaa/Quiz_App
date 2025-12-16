@@ -21,6 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.tubes.TeacherRoute
 import com.example.tubes.data.model.TeacherQuizUi
 import com.example.tubes.viewmodel.TeacherQuizListViewModel // Asumsi ViewModel Anda
 import java.text.SimpleDateFormat
@@ -34,7 +35,8 @@ fun TeacherQuizListScreen(
     authorId: String,
     viewModel: TeacherQuizListViewModel = viewModel(),
     onAddQuizClick: () -> Unit,
-    onEditQuizClick: (String) -> Unit   // ⬅️ INI KUNCI
+    onEditQuizClick: (String) -> Unit,
+    onGenerateQrClick: (String) -> Unit
 
 ) {
     val quizzes by viewModel.quizzes.collectAsState()
@@ -88,7 +90,9 @@ fun TeacherQuizListScreen(
             items(quizzes) { quiz ->
                 QuizCardItem(
                     quiz = quiz,
-                    onDetailClick = { },
+                    onDetailClick = {
+                        onGenerateQrClick(quiz.id)
+                    },
                     onEditClick = {
                         onEditQuizClick(quiz.id)
                     },

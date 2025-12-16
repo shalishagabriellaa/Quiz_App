@@ -107,6 +107,7 @@ dependencies {
     implementation("com.cloudinary:cloudinary-android:2.3.1")
     implementation("io.coil-kt:coil-compose:2.6.0")
     implementation("com.patrykandpatrick.vico:compose:1.14.0")
+    implementation("com.google.zxing:core:3.5.2")
     implementation(libs.androidx.material3)
 
     testImplementation(libs.junit)

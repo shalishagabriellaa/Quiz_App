@@ -34,6 +34,7 @@ import com.example.tubes.ui.screen.teacher.TeacherCreateQuizScreen
 import com.example.tubes.ui.screen.teacher.TeacherProfileScreen
 import com.example.tubes.ui.screen.teacher.TeacherQuestionBankScreen
 import com.example.tubes.ui.screen.teacher.TeacherQuizListScreen
+import com.example.tubes.ui.screen.teacher.TeacherQuizQrScreen
 import com.example.tubes.ui.teacher.TeacherDashboard
 import com.example.tubes.ui.teacher.components.TeacherBottomNavigation
 import com.example.tubes.viewmodel.AuthViewModel
@@ -49,6 +50,8 @@ import com.example.tubes.viewmodel.TeacherQuestionBankViewModel
 import com.example.tubes.viewmodel.TeacherQuestionBankViewModelFactory
 import com.example.tubes.viewmodel.TeacherQuizListViewModel
 import com.example.tubes.viewmodel.TeacherQuizListViewModelFactory
+import com.example.tubes.viewmodel.TeacherQuizQrViewModel
+import com.example.tubes.viewmodel.TeacherQuizQrViewModelFactory
 import com.google.firebase.firestore.FirebaseFirestore
 
 @Composable
@@ -123,6 +126,11 @@ fun TeacherAppNavigation(
                         onEditQuizClick = { quizId ->
                             navController.navigate(
                                 TeacherRoute.QuizEdit.createRoute(quizId)
+                            )
+                        },
+                        onGenerateQrClick = { quizId ->   // ⬅️ DI SINI
+                            navController.navigate(
+                                TeacherRoute.QuizQr.createRoute(quizId)
                             )
                         }
                     )
@@ -218,7 +226,6 @@ fun TeacherAppNavigation(
 
             composable("quiz_preview") { backStackEntry ->
 
-                // 🔑 AMBIL BACKSTACK ENTRY DARI ADD QUESTION
                 val parentEntry = remember(backStackEntry) {
                     navController.getBackStackEntry(
                         "quiz_add_questions/{quizId}/{totalQuestions}"
@@ -235,6 +242,32 @@ fun TeacherAppNavigation(
                     }
                 )
             }
+            composable(
+                route = TeacherRoute.QuizQr.route,
+                arguments = listOf(
+                    navArgument("quizId") { type = NavType.StringType }
+                )
+            ) { backStackEntry ->
+
+                val quizId =
+                    backStackEntry.arguments!!.getString("quizId")!!
+
+                val quizRepo = TeacherQuizRepositoryImpl(
+                    FirebaseFirestore.getInstance()
+                )
+
+                val viewModel: TeacherQuizQrViewModel =
+                    viewModel(
+                        viewModelStoreOwner = backStackEntry,
+                        factory = TeacherQuizQrViewModelFactory(quizRepo)
+                    )
+
+                TeacherQuizQrScreen(
+                    quizId = quizId,
+                    viewModel = viewModel
+                )
+            }
+
 
 
 
@@ -262,6 +295,48 @@ fun TeacherAppNavigation(
                     )
                 }
             }
+
+            // CREATE QUIZ
+            composable(TeacherRoute.QuizCreate.route) { backStackEntry ->
+
+                if (authorId == null) return@composable
+
+                val cloudinaryManager = CloudinaryManager(
+                    cloudName = BuildConfig.CLOUDINARY_NAME,
+                    apiKey = BuildConfig.CLOUDINARY_API_KEY,
+                    apiSecret = BuildConfig.CLOUDINARY_API_SECRET
+                )
+
+                val quizRepo = TeacherQuizRepositoryImpl(
+                    FirebaseFirestore.getInstance()
+                )
+
+                val cloudinaryRepo =
+                    CloudinaryRepositoryImpl(cloudinaryManager)
+
+                val viewModel: TeacherCreateQuizViewModel =
+                    viewModel(
+                        backStackEntry,
+                        factory = TeacherCreateQuizViewModelFactory(
+                            quizRepo,
+                            cloudinaryRepo
+                        )
+                    )
+
+                TeacherCreateQuizScreen(
+                    authorId = authorId,
+                    viewModel = viewModel,
+                    onNavigateToAddQuestions = { quizId, totalQuestions ->
+                        navController.navigate(
+                            TeacherRoute.QuizAddQuestions.createRoute(
+                                quizId,
+                                totalQuestions
+                            )
+                        )
+                    }
+                )
+            }
+
 
             composable(TeacherRoute.Monitoring.route) { backStackEntry ->
 

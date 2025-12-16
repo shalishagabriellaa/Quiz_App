@@ -20,4 +20,10 @@ interface TeacherQuizRepository {
         quiz: TeacherCreateQuizUi,
         bannerUrl: String?
     )
+
+    suspend fun generateQuizQr(
+        quizId: String,
+        expiredAtMillis: Long
+    ): String
+
 }

@@ -105,11 +105,33 @@ fun QuizCardItem(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    val canEdit = quiz.status.equals("draft", ignoreCase = true)
+
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        ActionButton(label = "Detail", icon = Icons.Default.Info, color = Color(0xFF4C75FF), onClick = onDetailClick)
-                        ActionButton(label = "Edit", icon = Icons.Default.Edit, color = Color(0xFFEE8A4E), onClick = onEditClick)
-                        ActionButton(label = "Delete", icon = Icons.Default.Delete, color = Color.Red, onClick = onDeleteClick)
+
+                        ActionButton(
+                            label = "Generate",
+                            icon = Icons.Default.Info,
+                            color = Color(0xFF4C75FF),
+                            onClick = onDetailClick
+                        )
+
+                        ActionButton(
+                            label = "Edit",
+                            icon = Icons.Default.Edit,
+                            color = Color(0xFFEE8A4E),
+                            enabled = canEdit,        // ⬅️ FIX 1
+                            onClick = onEditClick
+                        )
+
+                        ActionButton(
+                            label = "Delete",
+                            icon = Icons.Default.Delete,
+                            color = Color.Red,
+                            onClick = onDeleteClick
+                        )
                     }
+
                     Text(
                         // Menggunakan warna hijau terang dari status completed/active pada screenshot
                         text = quiz.status.replaceFirstChar { it.titlecase(Locale.ROOT) },
@@ -167,26 +189,40 @@ fun ActionButton(
     label: String,
     icon: ImageVector,
     color: Color,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    enabled: Boolean = true,
 ) {
+    val contentColor =
+        if (enabled) color else color.copy(alpha = 0.4f)
+
     Row(
         modifier = Modifier
             .clip(RoundedCornerShape(8.dp))
-            .clickable(onClick = onClick)
-            .border(1.dp, color, RoundedCornerShape(8.dp))
+            .then(
+                if (enabled) {
+                    Modifier.clickable(onClick = onClick)
+                } else {
+                    Modifier // ⬅️ NO CLICK
+                }
+            )
+            .border(
+                1.dp,
+                contentColor,
+                RoundedCornerShape(8.dp)
+            )
             .padding(horizontal = 8.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
             imageVector = icon,
             contentDescription = label,
-            tint = color,
+            tint = contentColor,
             modifier = Modifier.size(12.dp)
         )
         Spacer(modifier = Modifier.width(4.dp))
         Text(
             text = label,
-            color = color,
+            color = contentColor,
             fontSize = 12.sp,
             fontWeight = FontWeight.SemiBold
         )
