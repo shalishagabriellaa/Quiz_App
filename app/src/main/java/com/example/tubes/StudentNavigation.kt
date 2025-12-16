@@ -40,6 +40,7 @@ import com.example.tubes.ui.screen.profile.FollowingScreen
 import com.example.tubes.ui.screen.quizzes.YourQuizzesScreen
 import com.example.tubes.ui.screen.setting.AboutQuorriScreen
 import com.example.tubes.ui.screen.setting.ChangePasswordScreen
+import com.example.tubes.ui.screen.setting.HelpArticleDetailScreen
 import com.example.tubes.ui.screen.setting.HelpCenterScreen
 import com.example.tubes.ui.screen.setting.PersonalInfoScreen
 import com.example.tubes.viewmodel.*
@@ -62,6 +63,12 @@ fun StudentNavigation() {
     val authState by authViewModel.authState.collectAsState()
 
     val homeRepository = remember { HomeRepositoryImpl() }
+    val categorySpecifyViewModel: CategorySpecifyViewModel = viewModel(
+        factory = CategorySpecifyViewModelFactory(homeRepository)
+    )
+    val testInfoViewModel: TestInformationViewModel = viewModel(
+        factory = TestInformationViewModelFactory(homeRepository)
+    )
     val homeViewModel: HomeViewModel = viewModel(
         factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -220,23 +227,10 @@ fun StudentNavigation() {
             )
         }
 
-        // 🆕 ===== HELP CENTER =====
-        composable("helpCenter") {
-            HelpCenterScreen(
-                onBack = { navController.popBackStack() },
-                onContactSupport = {
-                    // TODO: Open email or support form
-                }
-            )
-        }
-
         // 🆕 ===== ABOUT QUORRI =====
         composable("aboutQuorri") {
             AboutQuorriScreen(
-                onBack = { navController.popBackStack() },
-                onContactUs = {
-                    // TODO: Open email or support form
-                }
+                onBack = { navController.popBackStack() }
             )
         }
 
@@ -250,7 +244,10 @@ fun StudentNavigation() {
                 viewModel = quizViewModel,
                 onBackClick = { navController.popBackStack() },
                 onQuizComplete = { navController.popBackStack() },
-                onViewExplanation = { qId -> navController.navigate("answerExplanation/$qId") },
+                onViewExplanation = { qId ->
+                    // ✅ kirim userId juga
+                    navController.navigate("answerExplanation/$qId")
+                },
                 userId = userId
             )
         }
@@ -258,10 +255,12 @@ fun StudentNavigation() {
         // ===== ANSWER EXPLANATION =====
         composable("answerExplanation/{quizId}") { backStackEntry ->
             val quizId = backStackEntry.arguments?.getString("quizId") ?: ""
+            val userId = (authState as? AuthState.Success)?.userId ?: ""
+
             AnswerExplanationScreen(
                 quizId = quizId,
-                viewModel = quizViewModel,
-                onBackClick = { navController.popBackStack() }
+                userId = userId,
+                onBackClick = { navController.popBackStack() } // ✅ balik Result
             )
         }
 
@@ -281,9 +280,11 @@ fun StudentNavigation() {
         composable("categorySpecify/{categoryId}/{categoryName}") { backStackEntry ->
             val categoryId = backStackEntry.arguments?.getString("categoryId") ?: ""
             val categoryName = backStackEntry.arguments?.getString("categoryName") ?: ""
+
             CategorySpecifyScreen(
                 categoryId = categoryId,
                 categoryName = categoryName,
+                viewModel = categorySpecifyViewModel,
                 onBackClick = { navController.popBackStack() },
                 onQuizClick = { quizId -> navController.navigate("testInfo/$quizId") }
             )
@@ -294,6 +295,7 @@ fun StudentNavigation() {
             val quizId = backStackEntry.arguments?.getString("quizId") ?: ""
             TestInformationScreen(
                 quizId = quizId,
+                viewModel = testInfoViewModel,
                 onBackClick = { navController.popBackStack() },
                 onStartQuiz = { navController.navigate(Screen.QuizScreen.route + "/$quizId") }
             )
@@ -356,6 +358,21 @@ fun StudentNavigation() {
                     navController.navigate("testInfo/$quizId")
                 },
                 viewModel = yourQuizzesViewModel
+            )
+        }
+
+        composable("helpCenter") {
+            HelpCenterScreen(
+                onBack = { navController.popBackStack() },
+                onOpenArticle = { id -> navController.navigate("helpDetail/$id") }
+            )
+        }
+
+        composable("helpDetail/{id}") { entry ->
+            val id = entry.arguments?.getString("id") ?: ""
+            HelpArticleDetailScreen(
+                articleId = id,
+                onBack = { navController.popBackStack() }
             )
         }
 
@@ -444,6 +461,9 @@ private fun MainScreenWithBottomNav(
                     startDestination = "home"
                 ) {
 
+                    // Di StudentNavigation.kt, di dalam MainScreenWithBottomNav
+// Ubah composable("home") menjadi seperti ini:
+
                     composable("home") {
                         val authState by authViewModel.authState.collectAsState()
                         val state by homeViewModel.uiState.collectAsState()
@@ -472,6 +492,7 @@ private fun MainScreenWithBottomNav(
                                 topAuthors = state.topAuthors.map { it.toAuthorUi() },
                                 userName = state.userName,
                                 avatarUrl = state.avatarUrl,
+                                searchError = state.searchError, // 🆕 Pass searchError dari state
                                 onHome = {},
                                 onQuizzes = { bottomNavController.navigate("quizzes") },
                                 onQR = { showQrScanner = true },
@@ -480,7 +501,7 @@ private fun MainScreenWithBottomNav(
                                 onSettings = { navController.navigate(Screen.SettingScreen.route) },
                                 onSearchQuizCode = { code ->
                                     homeViewModel.searchQuizByCode(code) { quizId ->
-                                        navController.navigate("testInfo/$quizId")
+                                        navController.navigate("testInfo/$quizId") // 🔥 Langsung ke testInfo
                                     }
                                 },
                                 onCategorySeeAll = { navController.navigate("category") },
@@ -508,7 +529,7 @@ private fun MainScreenWithBottomNav(
                             userId = userId,
                             onBackClick = { bottomNavController.navigate("home") },
                             onResultClick = { quizId -> navController.navigate("answerExplanation/$quizId") },
-                                    viewModel = yourQuizzesViewModel
+                            viewModel = yourQuizzesViewModel
                         )
                     }
 
@@ -530,17 +551,17 @@ private fun MainScreenWithBottomNav(
                         ProfileScreen(
                             viewModel = profileViewModel,
                             onBackClick = { bottomNavController.navigate("home") },
-                            onNavigateToSettings = {
-                                navController.navigate(Screen.SettingScreen.route)
-                            },
-                            onNavigateToQuizHistory = {
-                                navController.navigate("quizHistory/$userId")
-                            },
-                            onNavigateToFollowers = {
-                                navController.navigate("followers/$userId")
-                            },
-                            onNavigateToFollowing = {
-                                navController.navigate("following/$userId")
+                            onNavigateToSettings = { navController.navigate(Screen.SettingScreen.route) },
+                            onNavigateToQuizHistory = { navController.navigate("quizHistory/$userId") },
+                            onNavigateToFollowers = { navController.navigate("followers/$userId") },
+                            onNavigateToFollowing = { navController.navigate("following/$userId") },
+                            onNavigateToHelpCenter = { navController.navigate("helpCenter") }, // ✅ ini
+                            onLogout = {
+                                authViewModel.logout()
+                                navController.navigate(Screen.LoginScreen.route) {
+                                    popUpTo(0) { inclusive = true }
+                                    launchSingleTop = true
+                                }
                             }
                         )
                     }

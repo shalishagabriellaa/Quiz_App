@@ -27,14 +27,14 @@ class FollowersViewModel(private val repository: ProfileRepository) : ViewModel(
             _uiState.update { it.copy(isLoading = true, error = null) }
 
             try {
-                val followers = repository.getFollowers(userId)
+//                val followers = repository.getFollowers(userId)
 
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        users = followers
-                    )
-                }
+//                _uiState.update {
+//                    it.copy(
+//                        isLoading = false,
+//                        users = followers
+//                    )
+//                }
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(

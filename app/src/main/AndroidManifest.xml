@@ -22,6 +22,8 @@
             </intent-filter>
         </activity>
 
+        <uses-permission android:name="android.permission.CAMERA" />
+
         <!-- ✅ Kalau nanti ada LoginActivity, tambahkan di sini -->
         <!-- <activity android:name=".LoginActivity" android:exported="false" /> -->
 

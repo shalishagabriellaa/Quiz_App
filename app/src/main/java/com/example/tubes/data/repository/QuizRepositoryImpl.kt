@@ -1,212 +1,134 @@
 package com.example.tubes.data.repository
 
-import android.util.Log
-import com.example.tubes.data.model.Quiz
-import com.example.tubes.data.model.QuestionFirestore
 import com.example.tubes.data.model.QuestionUi
-import com.example.tubes.data.model.toAnswerIndex
+import com.example.tubes.data.model.Quiz
+import com.example.tubes.data.model.User
+import com.example.tubes.domain.repository.QuizRepository
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
-import java.util.Calendar
-
-// Kontrak repository
-interface QuizRepository {
-    suspend fun getQuizById(quizId: String): Quiz?
-    suspend fun getQuestionsByQuizId(quizId: String): List<QuestionUi>
-    suspend fun submitQuizResult(
-        userId: String,
-        quizId: String,
-        userAnswers: Map<String, String> // Map<QuestionID, SelectedAnswer>
-    )
-}
 
 class QuizRepositoryImpl(
-    private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
+    private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
 ) : QuizRepository {
 
-    companion object {
-        private const val TAG = "QuizRepository"
-        private const val COLLECTION_QUIZZES = "quizzes"
-        private const val COLLECTION_QUESTIONS = "questions"
-        private const val COLLECTION_USERS = "users"
-    }
-
     override suspend fun getQuizById(quizId: String): Quiz? {
-        return try {
-            Log.d(TAG, "Fetching quiz: $quizId")
-            val document = firestore.collection(COLLECTION_QUIZZES)
-                .document(quizId)
-                .get()
-                .await()
-
-            if (document.exists()) {
-                val quiz = document.toObject(Quiz::class.java)?.copy(id = document.id)
-                Log.d(TAG, "Quiz found: ${quiz?.title}")
-                quiz
-            } else {
-                Log.w(TAG, "Quiz not found: $quizId")
-                null
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error fetching quiz", e)
-            null
-        }
+        if (quizId.isBlank()) return null
+        val doc = db.collection("quizzes").document(quizId).get().await()
+        if (!doc.exists()) return null
+        return doc.toQuizOrNull()
     }
 
     override suspend fun getQuestionsByQuizId(quizId: String): List<QuestionUi> {
-        return try {
-            Log.d(TAG, "Fetching questions for quiz (subcollection): $quizId")
+        if (quizId.isBlank()) return emptyList()
+        val snap = db.collection("quizzes")
+            .document(quizId)
+            .collection("questions")
+            .get()
+            .await()
 
-            val querySnapshot = firestore.collection(COLLECTION_QUIZZES)
-                .document(quizId)
-                .collection(COLLECTION_QUESTIONS)
-                .get()
-                .await()
+        // optional: urutkan berdasarkan id kalau id angka "1","2","3"
+        return snap.documents
+            .mapNotNull { it.toQuestionUiOrNull() }
+            .sortedBy { it.id.toIntOrNull() ?: Int.MAX_VALUE }
+    }
 
-            val questions = querySnapshot.documents.mapNotNull { doc ->
-                try {
-                    val question = doc.toObject(QuestionFirestore::class.java)
-                    question?.let {
-                        QuestionUi(
-                            id = doc.id,
-                            category = "",
-                            question = it.text,
-                            options = it.options,
-                            correctAnswerIndex = it.answer.toAnswerIndex(),
-                            explanation = it.explanation
-                        )
-                    }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Error parsing question: ${doc.id}", e)
-                    null
-                }
-            }
-            Log.d(TAG, "Loaded ${questions.size} questions from subcollection")
-            questions
-        } catch (e: Exception) {
-            Log.e(TAG, "Error fetching questions from subcollection", e)
-            emptyList()
+    override suspend fun getUser(userId: String): User? {
+        if (userId.isBlank()) return null
+        val doc = db.collection("users").document(userId).get().await()
+        if (!doc.exists()) return null
+        return doc.toUserOrNull()
+    }
+
+    override suspend fun saveQuizAttempt(
+        userId: String?,
+        quizId: String,
+        quizTitle: String,
+        score: Int,
+        percentage: Int,
+        correctAnswers: Int,
+        totalQuestions: Int,
+        maxScore: Int,
+        pointsEarned: Int,
+        userAnswersIndex: Map<String, Int>
+    ) {
+        val data = hashMapOf<String, Any>(
+            "quizId" to quizId,
+            "quizTitle" to quizTitle,
+            "score" to score,
+            "percentage" to percentage,
+            "correctAnswers" to correctAnswers,
+            "totalQuestions" to totalQuestions,
+            "maxScore" to maxScore,
+            "pointsEarned" to pointsEarned,
+            "userAnswersIndex" to userAnswersIndex,
+            "submittedAt" to FieldValue.serverTimestamp()
+        )
+
+        if (!userId.isNullOrBlank()) data["userId"] = userId
+
+        // ✅ kalau passed (pointsEarned > 0) tandai passedAt
+        if (pointsEarned > 0) {
+            data["passedAt"] = FieldValue.serverTimestamp()
+        }
+
+        db.collection("quiz_attempts").add(data).await()
+    }
+
+    override suspend fun addUserPoints(userId: String, points: Int) {
+        if (userId.isBlank() || points <= 0) return
+        db.collection("users").document(userId)
+            .update(
+                mapOf(
+                    "totalScore" to FieldValue.increment(points.toLong())
+                    // kalau kamu mau weeklyScore dll bisa ditambah disini
+                )
+            )
+            .await()
+    }
+
+    override suspend fun hasUserPassedQuiz(userId: String, quizId: String): Boolean {
+        if (userId.isBlank() || quizId.isBlank()) return false
+
+        val snap = db.collection("quiz_attempts")
+            .whereEqualTo("userId", userId)
+            .whereEqualTo("quizId", quizId)
+            .limit(20) // ambil beberapa aja, nanti difilter di client
+            .get()
+            .await()
+
+        if (snap.isEmpty) return false
+
+        // ✅ cek di client: pernah ada pointsEarned > 0 (berarti pernah pass)
+        return snap.documents.any { doc ->
+            val points = doc.getLong("pointsEarned") ?: 0L
+            points > 0L
         }
     }
 
-    override suspend fun submitQuizResult(
-        userId: String,
-        quizId: String,
-        userAnswers: Map<String, String>
-    ) {
-        val userRef = firestore.collection(COLLECTION_USERS).document(userId)
-        val quizRef = firestore.collection(COLLECTION_QUIZZES).document(quizId)
-        val userQuizResultRef = userRef.collection("quizResults").document(quizId)
+    override suspend fun getLatestAttemptAnswers(userId: String, quizId: String): Map<String, Int> {
+        if (userId.isBlank() || quizId.isBlank()) return emptyMap()
 
-        try {
-            // ====== A. ambil jawaban benar & poin per soal dari Firestore ======
-            val questionsSnapshot = quizRef.collection(COLLECTION_QUESTIONS)
-                .get()
-                .await()
+        val snap = db.collection("quiz_attempts")
+            .whereEqualTo("userId", userId)
+            .whereEqualTo("quizId", quizId)
+            .orderBy("submittedAt")
+            .limitToLast(1)
+            .get()
+            .await()
 
-            val correctAnswers = questionsSnapshot.documents.associate { doc ->
-                val correctAnswer = doc.getString("answer")
-                val points = doc.getLong("points")?.toInt() ?: 0
-                doc.id to (correctAnswer to points)
+        val doc = snap.documents.firstOrNull() ?: return emptyMap()
+        val raw = doc.get("userAnswersIndex") as? Map<*, *> ?: return emptyMap()
+
+        return raw.entries.mapNotNull { (k, v) ->
+            val key = k as? String ?: return@mapNotNull null
+            val value = when (v) {
+                is Long -> v.toInt()
+                is Int -> v
+                else -> return@mapNotNull null
             }
-
-            // ====== B. hitung skor ======
-            var calculatedScore = 0
-            var correctCount = 0
-
-            for ((questionId, selectedAnswer) in userAnswers) {
-                val correctInfo = correctAnswers[questionId]
-                if (correctInfo != null && selectedAnswer == correctInfo.first) {
-                    calculatedScore += correctInfo.second
-                    correctCount++
-                }
-            }
-            val totalQuestions = correctAnswers.size
-
-            // ====== C. transaksi Firestore (update user + quiz + history) ======
-            firestore.runTransaction { transaction ->
-                val quizDoc = transaction.get(quizRef)
-                val userDoc = transaction.get(userRef)
-                val existingUserResultDoc = transaction.get(userQuizResultRef)
-
-                // ---- C1. Weekly score auto-reset per minggu ----
-                val calendar = Calendar.getInstance()
-                val currentWeek = calendar.get(Calendar.WEEK_OF_YEAR)
-
-                val previousWeek = userDoc.getLong("weekOfYear")?.toInt() ?: 0
-                val existingWeeklyScore = userDoc.getLong("weeklyScore") ?: 0L
-
-                val newWeeklyScore = if (previousWeek != currentWeek) {
-                    // minggu berganti → reset weeklyScore, mulai dari skor quiz ini
-                    calculatedScore.toLong()
-                } else {
-                    // minggu masih sama → tambahkan
-                    existingWeeklyScore + calculatedScore
-                }
-
-                // ---- C2. update user document ----
-                val userUpdate = mapOf(
-                    // totalScore selalu naik (all time)
-                    "totalScore" to FieldValue.increment(calculatedScore.toLong()),
-                    // weeklyScore sudah dihitung manual
-                    "weeklyScore" to newWeeklyScore,
-                    "weekOfYear" to currentWeek
-                )
-                transaction.update(userRef, userUpdate)
-
-                // ---- C3. simpan hasil di subcollection quizResults ----
-                val quizResultData = hashMapOf(
-                    "quizId" to quizId,
-                    "quizTitle" to (quizDoc.getString("title") ?: ""),
-                    "quizBannerUrl" to quizDoc.getString("bannerUrl"),
-                    "lastScore" to calculatedScore,
-                    "correctAnswers" to correctCount,
-                    "totalQuestions" to totalQuestions,
-                    "lastPlayedAt" to Timestamp.now()
-                )
-                transaction.set(userQuizResultRef, quizResultData)
-
-                // ---- C4. update statistik agregat di dokumen quiz ----
-                if (quizDoc.exists()) {
-                    transaction.update(quizRef, "attemptCount", FieldValue.increment(1))
-                    transaction.update(
-                        quizRef,
-                        "cumulativeScore",
-                        FieldValue.increment(calculatedScore.toLong())
-                    )
-
-                    val oldAttemptCount = quizDoc.getLong("attemptCount") ?: 0L
-                    val oldCumulativeScore = quizDoc.getLong("cumulativeScore") ?: 0L
-
-                    val newAttemptCount = oldAttemptCount + 1
-                    val newCumulativeScore = oldCumulativeScore + calculatedScore
-
-                    val newAverageScore =
-                        if (newAttemptCount > 0) newCumulativeScore.toDouble() / newAttemptCount
-                        else 0.0
-
-                    transaction.update(quizRef, "averageScore", newAverageScore)
-
-                    // kalau user ini pertama kali main quiz ini → peserta +1
-                    if (!existingUserResultDoc.exists()) {
-                        transaction.update(
-                            quizRef,
-                            "totalParticipants",
-                            FieldValue.increment(1)
-                        )
-                    }
-                }
-            }.await()
-
-            Log.d(
-                TAG,
-                "Transaction success: Score $calculatedScore. Stats updated for quiz $quizId"
-            )
-        } catch (e: Exception) {
-            Log.e(TAG, "Transaction failed for submitQuizResult", e)
-            throw e
-        }
+            key to value
+        }.toMap()
     }
 }

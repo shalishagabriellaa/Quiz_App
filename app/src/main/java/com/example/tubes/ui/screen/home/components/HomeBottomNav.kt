@@ -31,14 +31,9 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.windowInsetsPadding
-
-/* =========================
-   PUBLIC API
-   ========================= */
 
 enum class BottomTab(val label: String) {
     Home("Home"), Quizzes("Quizzes"), Leaderboard("Leaderboard"), Profile("Profile")
@@ -48,14 +43,12 @@ enum class BottomTab(val label: String) {
 fun QuizBottomBar(
     selected: BottomTab,
     onSelected: (BottomTab) -> Unit,
+    onQrClick: () -> Unit,              // ✅ tambah ini
     modifier: Modifier = Modifier
 ) {
-    // Bar container (rounded top)
     Box(
         modifier = modifier
             .fillMaxWidth()
-            // JANGAN clip container-nya
-            .background(BarPurple)
             .shadow(
                 elevation = 12.dp,
                 shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
@@ -101,7 +94,12 @@ fun QuizBottomBar(
             ) { onSelected(BottomTab.Profile) }
         }
 
-        // garis putih bawah
+        // ✅ tombol QR beneran ditaruh overlay center
+        QrCenterButton(
+            modifier = Modifier.align(Alignment.TopCenter).offset(y = (-26).dp),
+            onClick = onQrClick
+        )
+
         Box(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -113,10 +111,6 @@ fun QuizBottomBar(
     }
 }
 
-/* =========================
-   PRIVATE: ITEM & QR BUTTON
-   ========================= */
-
 @Composable
 private fun BarItem(
     text: String,
@@ -124,35 +118,37 @@ private fun BarItem(
     selected: Boolean,
     onClick: () -> Unit
 ) {
-    // Animasi "naik" & ukuran lingkaran aktif
     val lift by animateDpAsState(
         targetValue = if (selected) 35.dp else 0.dp,
-        animationSpec = spring(stiffness = Spring.StiffnessMediumLow)
+        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        label = "lift"
     )
 
     val circleSize by animateDpAsState(
         targetValue = if (selected) 64.dp else 0.dp,
-        animationSpec = spring(stiffness = Spring.StiffnessLow)
+        animationSpec = spring(stiffness = Spring.StiffnessLow),
+        label = "circleSize"
     )
 
     val borderWidth by animateDpAsState(
         targetValue = if (selected) 5.dp else 0.dp,
-        animationSpec = spring(stiffness = Spring.StiffnessLow)
+        animationSpec = spring(stiffness = Spring.StiffnessLow),
+        label = "borderWidth"
     )
 
     val iconAlpha by animateFloatAsState(
-        targetValue = if (selected) 1f else 0.95f
+        targetValue = if (selected) 1f else 0.95f,
+        label = "iconAlpha"
     )
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .widthIn(min = 70.dp)
-            .offset(y = -lift) // ← efek "ikon naik"
+            .offset(y = -lift)
             .clickable { onClick() }
     ) {
         if (selected) {
-            // Lingkaran aktif lebih besar + ring biru + shadow
             Box(
                 modifier = Modifier
                     .size(circleSize)
@@ -187,25 +183,25 @@ private fun QrCenterButton(
     modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
-    // Animasi "naik" saat ditekan (press state)
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
     val lift by animateDpAsState(
         targetValue = if (pressed) 8.dp else 0.dp,
-        animationSpec = spring(stiffness = Spring.StiffnessMediumLow)
+        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        label = "qrLift"
     )
 
     Box(
         modifier = modifier
-            .offset(y = -lift) // ← naik saat ditekan
-            .size(68.dp)       // sedikit lebih besar
+            .offset(y = -lift)
+            .size(68.dp)
             .shadow(14.dp, CircleShape, clip = false)
             .clip(CircleShape)
             .background(Color.White)
-            .border(width = 4.dp, color = DeepBlue, shape = CircleShape) // ← BORDER QR
+            .border(width = 4.dp, color = DeepBlue, shape = CircleShape)
             .clickable(
                 interactionSource = interaction,
-                indication = null // biar clean, tanpa ripple (opsional)
+                indication = null
             ) { onClick() },
         contentAlignment = Alignment.Center
     ) {
@@ -218,9 +214,6 @@ private fun QrCenterButton(
     }
 }
 
-/* =========================
-   COLORS
-   ========================= */
-private val BarPurple  = Color(0xFF4C4FA4)
-private val DeepBlue   = Color(0xFF162471)
+private val BarPurple = Color(0xFF4C4FA4)
+private val DeepBlue = Color(0xFF162471)
 private val GoldActive = Color(0xFFF4D488)

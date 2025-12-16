@@ -19,6 +19,8 @@ import com.example.tubes.ui.screen.home.models.CategoryUi
 import com.example.tubes.ui.screen.home.models.QuizUi
 import com.example.tubes.ui.screen.home.models.YourQuizUi
 
+// Di HomeScreen.kt, ubah signature function menjadi:
+
 @Composable
 fun HomeScreen(
     categories: List<CategoryUi>,
@@ -28,7 +30,7 @@ fun HomeScreen(
     topAuthors: List<AuthorUi>,
     userName: String,
     avatarUrl: String?,
-    // dipanggil dari StudentNavigation, walau tidak semua dipakai di sini
+    searchError: String? = null, // 🆕 Tambahkan parameter ini
     onHome: () -> Unit,
     onQuizzes: () -> Unit,
     onQR: () -> Unit,
@@ -47,7 +49,6 @@ fun HomeScreen(
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
-        // Background
         Image(
             painter = painterResource(id = R.drawable.section_bg),
             contentDescription = null,
@@ -59,18 +60,17 @@ fun HomeScreen(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(bottom = 24.dp)
         ) {
-            // Top bar (welcome + settings + search by code)
             item {
                 HomeTopBar(
                     userName = userName,
                     onSettings = onSettings,
-                    onSearch = onSearchQuizCode
+                    onSearch = onSearchQuizCode,
+                    searchError = searchError // 🆕 Pass searchError ke HomeTopBar
                 )
             }
 
             item { Spacer(Modifier.height(12.dp)) }
 
-            // Isi utama: category, banner, trending, top authors, your quizzes
             item {
                 HomeSection(
                     categories = categories,

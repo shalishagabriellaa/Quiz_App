@@ -34,17 +34,31 @@ fun QuizScreen(
     onViewExplanation: (quizId: String) -> Unit,
     userId: String?
 ) {
-
     val uiState by viewModel.uiState.collectAsState()
 
-    // Muat kuis saat pertama kali layar dibuat atau saat quizId berubah
+    var showUnansweredDialog by remember { mutableStateOf(false) }
+
     LaunchedEffect(quizId) {
-        // Pemanggilan setCurrentUserId() dihapus karena tidak lagi diperlukan.
-        // userId akan dikirim langsung saat submit.
-        viewModel.loadQuiz(quizId)
+        if (!viewModel.uiState.value.isSubmitted &&
+            viewModel.uiState.value.questions.isEmpty()
+        ) {
+            viewModel.loadQuiz(quizId)
+        }
     }
 
-    // --- Bagian Loading & Error (Tidak ada perubahan) ---
+    // Unanswered count
+    val unansweredCount = remember(uiState.questions, uiState.userAnswers) {
+        uiState.questions.count { q -> uiState.userAnswers[q.id] == null }
+    }
+
+    // Auto-submit safety: kalau timeRemaining 0 tapi belum submit (optional)
+    LaunchedEffect(uiState.timeRemaining, uiState.isSubmitted) {
+        if (!uiState.isSubmitted && uiState.timeRemaining <= 0 && !uiState.isLoading && uiState.error == null) {
+            viewModel.submitQuiz(userId = userId, auto = true)
+        }
+    }
+
+    // Loading
     if (uiState.isLoading) {
         Box(
             modifier = Modifier
@@ -52,22 +66,16 @@ fun QuizScreen(
                 .background(Color(0xFF1A237E)),
             contentAlignment = Alignment.Center
         ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 CircularProgressIndicator(color = Color.White)
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    text = "Loading quiz...",
-                    color = Color.White,
-                    fontSize = 16.sp
-                )
+                Spacer(Modifier.height(16.dp))
+                Text("Loading quiz...", color = Color.White, fontSize = 16.sp)
             }
         }
         return
     }
 
+    // Error
     if (uiState.error != null) {
         Box(
             modifier = Modifier
@@ -99,14 +107,18 @@ fun QuizScreen(
         return
     }
 
-    // --- Layar Hasil (Setelah Kuis Disubmit) ---
+    // Result Screen
     if (uiState.isSubmitted) {
-        // Layar hasil disederhanakan karena ViewModel tidak lagi menghitung skor.
         QuizResultScreen(
-            quizId = quizId,
+            scorePercent = uiState.scorePercent,
+            correctAnswers = uiState.correctAnswers,
+            totalQuestions = uiState.questions.size,
+            pointsEarned = uiState.pointsEarned,
+            passingGrade = uiState.passingGrade.toInt(),
+            isPassed = uiState.isPassed,
+            canRetry = uiState.canRetry, // ✅ user yang pernah lulus -> false
             onBackClick = onBackClick,
             onRetry = {
-                // Reset state dan muat ulang kuis untuk mencoba lagi.
                 viewModel.resetQuiz()
                 viewModel.loadQuiz(quizId)
             },
@@ -115,7 +127,30 @@ fun QuizScreen(
         return
     }
 
-    // --- Layar Kuis Utama ---
+    // Unanswered warning dialog (when submit)
+    if (showUnansweredDialog) {
+        AlertDialog(
+            onDismissRequest = { showUnansweredDialog = false },
+            title = { Text("Submit quiz?") },
+            text = { Text("You still have $unansweredCount unanswered question(s). Are you sure you want to submit?") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showUnansweredDialog = false
+                        viewModel.submitQuiz(userId = userId, auto = false)
+                    }
+                ) { Text("Submit anyway") }
+            },
+            dismissButton = {
+                OutlinedButton(onClick = { showUnansweredDialog = false }) { Text("Continue quiz") }
+            }
+        )
+    }
+
+    // Main Quiz UI
+    val isLast = uiState.currentQuestionIndex == uiState.questions.size - 1
+    val showPrev = uiState.currentQuestionIndex > 0
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -126,7 +161,6 @@ fun QuizScreen(
                 .fillMaxSize()
                 .statusBarsPadding()
         ) {
-            // Top Bar
             QuizTopBar(
                 currentQuestion = uiState.currentQuestionIndex + 1,
                 totalQuestions = uiState.questions.size,
@@ -134,10 +168,30 @@ fun QuizScreen(
                 onBackClick = onBackClick
             )
 
-            // Progress Bar
+            // ✅ Warning banner < 1 minute
+            if (uiState.timeRemaining in 1..59) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp, vertical = 8.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFE53935))
+                ) {
+                    Text(
+                        text = "⚠️ Less than 1 minute left!",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(12.dp)
+                    )
+                }
+            }
+
+            // Progress
             if (uiState.questions.isNotEmpty()) {
+                val progressValue =
+                    (uiState.currentQuestionIndex + 1).toFloat() / uiState.questions.size.toFloat()
+
                 LinearProgressIndicator(
-                    progress = { (uiState.currentQuestionIndex + 1).toFloat() / uiState.questions.size },
+                    progress = progressValue,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 24.dp, vertical = 16.dp)
@@ -148,21 +202,15 @@ fun QuizScreen(
                 )
             }
 
-            // Kartu Pertanyaan
-            // Kartu Pertanyaan
-            // Kartu Pertanyaan
-            if (uiState.questions.isNotEmpty() && uiState.currentQuestionIndex < uiState.questions.size) {
+            // Question card
+            if (uiState.questions.isNotEmpty() && uiState.currentQuestionIndex in uiState.questions.indices) {
                 val currentQuestion = uiState.questions[uiState.currentQuestionIndex]
-
-                // --- PERBAIKAN DI SINI ---    // Dapatkan jawaban yang dipilih dari map (bisa jadi null)
-                val selectedAnswer = uiState.userAnswers[currentQuestion.id]
-                // Cari indeks dari jawaban tersebut. Jika 'selectedAnswer' adalah null, indexOf akan aman dan mengembalikan -1.
-                val answerIndex = currentQuestion.options.indexOf(selectedAnswer)
+                val selected = uiState.userAnswers[currentQuestion.id] ?: -1
 
                 QuestionCard(
                     question = currentQuestion,
-                    selectedAnswerIndex = answerIndex, // Gunakan hasil yang sudah aman (answerIndex)
-                    onAnswerSelected = { newAnswerIndex -> viewModel.selectAnswer(newAnswerIndex) },
+                    selectedAnswerIndex = selected,
+                    onAnswerSelected = { viewModel.selectAnswer(it) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f)
@@ -170,57 +218,87 @@ fun QuizScreen(
                 )
             }
 
-
-            // Tombol Navigasi
+            // Bottom Navigation Buttons
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(24.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // Tombol Back (pertanyaan sebelumnya)
-                if (uiState.currentQuestionIndex > 0) {
+                if (showPrev) {
                     Button(
                         onClick = { viewModel.previousQuestion() },
-                        modifier = Modifier.weight(1f).height(56.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2196F3), contentColor = Color.White),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(56.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF2196F3),
+                            contentColor = Color.White
+                        ),
                         shape = RoundedCornerShape(28.dp)
                     ) {
                         Text("Back", fontSize = 18.sp, fontWeight = FontWeight.Bold)
                     }
-                } else {
-                    Spacer(modifier = Modifier.weight(1f))
-                }
 
-                Button(
-                    onClick = {
-                        if (uiState.currentQuestionIndex == uiState.questions.size - 1) {
-                            viewModel.submitQuiz(
-                                userId = userId,
-                            )
-                        } else {
-                            viewModel.nextQuestion()
-                        }
-                    },
-                    modifier = Modifier.weight(1f).height(56.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (uiState.currentQuestionIndex == uiState.questions.size - 1) Color(0xFF4CAF50) else Color(0xFFFF6B9D),
-                        contentColor = Color.White
-                    ),
-                    shape = RoundedCornerShape(28.dp)
-                ) {
-                    Text(
-                        text = if (uiState.currentQuestionIndex == uiState.questions.size - 1) "Submit" else "Next",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Button(
+                        onClick = {
+                            if (isLast) {
+                                if (unansweredCount > 0) showUnansweredDialog = true
+                                else viewModel.submitQuiz(userId = userId, auto = false)
+                            } else {
+                                viewModel.nextQuestion()
+                            }
+                        },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(56.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (isLast) Color(0xFF4CAF50) else Color(0xFFFF6B9D),
+                            contentColor = Color.White
+                        ),
+                        shape = RoundedCornerShape(28.dp)
+                    ) {
+                        Text(
+                            text = if (isLast) "Submit" else "Next",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                } else {
+                    // ✅ Full width if no previous button
+                    Button(
+                        onClick = {
+                            if (isLast) {
+                                if (unansweredCount > 0) showUnansweredDialog = true
+                                else viewModel.submitQuiz(userId = userId, auto = false)
+                            } else {
+                                viewModel.nextQuestion()
+                            }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (isLast) Color(0xFF4CAF50) else Color(0xFFFF6B9D),
+                            contentColor = Color.White
+                        ),
+                        shape = RoundedCornerShape(28.dp)
+                    ) {
+                        Text(
+                            text = if (isLast) "Submit" else "Next",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
         }
     }
 }
 
-// --- Composable lainnya tidak perlu diubah, tapi disertakan agar lengkap ---
+/* =========================
+ * TOP BAR
+ * ========================= */
 
 @Composable
 fun QuizTopBar(
@@ -238,16 +316,20 @@ fun QuizTopBar(
     ) {
         IconButton(
             onClick = onBackClick,
-            modifier = Modifier.size(48.dp).background(Color(0xFF3949AB), CircleShape)
+            modifier = Modifier
+                .size(48.dp)
+                .background(Color(0xFF3949AB), CircleShape)
         ) {
             Icon(Icons.Default.ArrowBack, "Back", tint = Color.White)
         }
+
         Text(
             text = "%02d of %02d".format(currentQuestion, totalQuestions),
             color = Color.White,
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold
         )
+
         Row(
             modifier = Modifier
                 .background(
@@ -269,6 +351,10 @@ fun QuizTopBar(
     }
 }
 
+/* =========================
+ * QUESTION CARD
+ * ========================= */
+
 @Composable
 fun QuestionCard(
     question: QuestionUi,
@@ -287,10 +373,16 @@ fun QuestionCard(
                 .padding(24.dp)
                 .verticalScroll(rememberScrollState())
         ) {
-            Text(question.category, color = Color.Gray, fontSize = 14.sp, fontWeight = FontWeight.Medium)
             Spacer(modifier = Modifier.height(12.dp))
-            Text(question.question, color = Color.Black, fontSize = 20.sp, fontWeight = FontWeight.Bold, lineHeight = 28.sp)
+            Text(
+                text = question.question,
+                color = Color.Black,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                lineHeight = 28.sp
+            )
             Spacer(modifier = Modifier.height(24.dp))
+
             question.options.forEachIndexed { index, option ->
                 OptionItem(
                     option = option,
@@ -312,18 +404,28 @@ fun OptionItem(
     onClick: () -> Unit
 ) {
     val selectedColor = Color(0xFF0D47A1)
+
     Card(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = if (isSelected) selectedColor.copy(alpha = 0.15f) else Color(0xFFF5F5F5)),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isSelected) selectedColor.copy(alpha = 0.15f) else Color(0xFFF5F5F5)
+        ),
         border = if (isSelected) BorderStroke(2.dp, selectedColor) else null
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                modifier = Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Text(
                     text = optionLabel,
                     color = if (isSelected) selectedColor else Color.Gray,
@@ -338,6 +440,7 @@ fun OptionItem(
                     fontWeight = FontWeight.Medium
                 )
             }
+
             if (isSelected) {
                 Icon(
                     imageVector = Icons.Default.CheckCircle,
@@ -345,59 +448,6 @@ fun OptionItem(
                     tint = selectedColor,
                     modifier = Modifier.size(24.dp)
                 )
-            }
-        }
-    }
-}
-
-@Composable
-fun QuizResultScreen(
-    quizId: String,
-    onBackClick: () -> Unit,
-    onRetry: () -> Unit,
-    onViewExplanation: () -> Unit
-) {
-    Box(
-        modifier = Modifier.fillMaxSize().background(Color(0xFF1A237E)),
-        contentAlignment = Alignment.Center
-    ) {
-        Card(
-            modifier = Modifier.fillMaxWidth().padding(24.dp),
-            shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White)
-        ) {
-            Column(
-                modifier = Modifier.padding(32.dp).fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(text = "✅", fontSize = 64.sp)
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    text = "Quiz Submitted!",
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1A237E)
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "Your results will be updated on your profile shortly.",
-                    textAlign = TextAlign.Center,
-                    color = Color.Gray
-                )
-                Spacer(modifier = Modifier.height(32.dp))
-                Button(
-                    onClick = onBackClick,
-                    modifier = Modifier.fillMaxWidth().height(50.dp)
-                ) {
-                    Text("Back to Home")
-                }
-                Spacer(modifier = Modifier.height(12.dp))
-                OutlinedButton(
-                    onClick = onRetry,
-                    modifier = Modifier.fillMaxWidth().height(50.dp)
-                ) {
-                    Text("Try Again")
-                }
             }
         }
     }
