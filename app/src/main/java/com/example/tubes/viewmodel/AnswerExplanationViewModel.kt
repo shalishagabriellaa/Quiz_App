@@ -2,37 +2,43 @@ package com.example.tubes.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.tubes.data.repository.QuizRepository
-import com.example.tubes.ui.screen.ExplanationUiState
+import com.example.tubes.data.model.QuestionUi
+import com.example.tubes.domain.repository.QuizRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+
+data class AnswerExplanationUiState(
+    val isLoading: Boolean = true,
+    val error: String? = null,
+    val questions: List<QuestionUi> = emptyList(),
+    val userAnswersIndex: Map<String, Int> = emptyMap()
+)
 
 class AnswerExplanationViewModel(
     private val repo: QuizRepository
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(ExplanationUiState())
-    val uiState: StateFlow<ExplanationUiState> = _uiState
+    private val _uiState = MutableStateFlow(AnswerExplanationUiState())
+    val uiState: StateFlow<AnswerExplanationUiState> = _uiState.asStateFlow()
 
-    fun load(quizId: String) {
+    fun load(quizId: String, userId: String) {
         viewModelScope.launch {
             try {
-                _uiState.value = _uiState.value.copy(isLoading = true, error = null)
+                _uiState.value = AnswerExplanationUiState(isLoading = true)
 
                 val questions = repo.getQuestionsByQuizId(quizId)
+                val answers = repo.getLatestAttemptAnswers(userId, quizId)
 
-                // NOTE:
-                // userAnswersIndex belum kita ambil dari DB (karena schema kamu belum simpan per-question).
-                // Jadi sementara kosong -> tetap bisa tampil pembahasan + correct answer.
-                _uiState.value = ExplanationUiState(
+                _uiState.value = AnswerExplanationUiState(
                     isLoading = false,
+                    error = null,
                     questions = questions,
-                    userAnswersIndex = emptyMap(),
-                    error = null
+                    userAnswersIndex = answers
                 )
             } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
+                _uiState.value = AnswerExplanationUiState(
                     isLoading = false,
                     error = e.message ?: "Unknown error"
                 )

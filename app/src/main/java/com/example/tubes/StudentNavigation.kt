@@ -256,7 +256,10 @@ fun StudentNavigation() {
                 viewModel = quizViewModel,
                 onBackClick = { navController.popBackStack() },
                 onQuizComplete = { navController.popBackStack() },
-                onViewExplanation = { qId -> navController.navigate("answerExplanation/$qId") },
+                onViewExplanation = { qId ->
+                    // ✅ kirim userId juga
+                    navController.navigate("answerExplanation/$qId")
+                },
                 userId = userId
             )
         }
@@ -264,9 +267,12 @@ fun StudentNavigation() {
         // ===== ANSWER EXPLANATION =====
         composable("answerExplanation/{quizId}") { backStackEntry ->
             val quizId = backStackEntry.arguments?.getString("quizId") ?: ""
+            val userId = (authState as? AuthState.Success)?.userId ?: ""
+
             AnswerExplanationScreen(
                 quizId = quizId,
-                onBackClick = { navController.popBackStack() }
+                userId = userId,
+                onBackClick = { navController.popBackStack() } // ✅ balik Result
             )
         }
 

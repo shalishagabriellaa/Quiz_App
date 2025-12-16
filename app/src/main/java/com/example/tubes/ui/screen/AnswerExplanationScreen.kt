@@ -26,9 +26,9 @@ import com.example.tubes.viewmodel.AnswerExplanationViewModelFactory
 @Composable
 fun AnswerExplanationScreen(
     quizId: String,
-    onBackClick: () -> Unit
+    userId: String,
+    onBackClick: () -> Unit // ✅ harus popBackStack()
 ) {
-    // ✅ pakai VM baru yang state-nya jelas
     val repo = remember { QuizRepositoryImpl() }
     val vm: AnswerExplanationViewModel = viewModel(
         factory = AnswerExplanationViewModelFactory(repo)
@@ -38,8 +38,8 @@ fun AnswerExplanationScreen(
     var currentQuestionIndex by remember { mutableIntStateOf(0) }
     var expandedQuestions by remember { mutableStateOf(setOf<Int>()) }
 
-    LaunchedEffect(quizId) {
-        vm.load(quizId)
+    LaunchedEffect(quizId, userId) {
+        vm.load(quizId, userId)
     }
 
     // Loading
@@ -55,6 +55,7 @@ fun AnswerExplanationScreen(
         return
     }
 
+    // Error
     if (uiState.error != null) {
         Box(
             modifier = Modifier
@@ -87,7 +88,6 @@ fun AnswerExplanationScreen(
     val options = currentQuestion.options
     val correctAnswerIndex = currentQuestion.correctAnswerIndex
 
-    // ✅ jawaban user sekarang pakai index, bukan text
     val userAnswerIndex: Int? = uiState.userAnswersIndex[currentQuestion.id]
 
     val isExpanded = expandedQuestions.contains(currentQuestionIndex)
@@ -152,12 +152,7 @@ fun AnswerExplanationScreen(
                         .fillMaxSize()
                         .padding(20.dp)
                 ) {
-                    Text(
-                        text = "Question",
-                        color = Color.Gray,
-                        fontSize = 14.sp
-                    )
-
+                    Text(text = "Question", color = Color.Gray, fontSize = 14.sp)
                     Spacer(modifier = Modifier.height(8.dp))
 
                     Text(
@@ -210,8 +205,6 @@ fun AnswerExplanationScreen(
                     colors = CardDefaults.cardColors(containerColor = Color.White)
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
-
-                        // tampilkan correct answer
                         val correctLabel = ('A' + correctAnswerIndex).toString()
                         Text(
                             text = "Correct Answer: $correctLabel. ${options.getOrNull(correctAnswerIndex).orEmpty()}",
@@ -240,7 +233,7 @@ fun AnswerExplanationScreen(
                 Button(
                     onClick = {
                         if (currentQuestionIndex > 0) currentQuestionIndex--
-                        else onBackClick()
+                        else onBackClick() // ✅ balik ke Result
                     },
                     modifier = Modifier
                         .weight(1f)
@@ -254,7 +247,7 @@ fun AnswerExplanationScreen(
                 Button(
                     onClick = {
                         if (currentQuestionIndex < totalQuestions - 1) currentQuestionIndex++
-                        else onBackClick()
+                        else onBackClick() // ✅ FINISH -> popBackStack -> balik Result
                     },
                     modifier = Modifier
                         .weight(1f)

@@ -2,7 +2,7 @@ package com.example.tubes.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import com.example.tubes.data.repository.QuizRepository
+import com.example.tubes.domain.repository.QuizRepository
 
 class AnswerExplanationViewModelFactory(
     private val repo: QuizRepository

@@ -1,176 +1,134 @@
 package com.example.tubes.data.repository
 
-import android.util.Log
-import com.example.tubes.data.model.Quiz
-import com.example.tubes.data.model.QuestionFirestore
 import com.example.tubes.data.model.QuestionUi
+import com.example.tubes.data.model.Quiz
+import com.example.tubes.data.model.User
+import com.example.tubes.domain.repository.QuizRepository
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
-import java.util.Calendar
-
-interface QuizRepository {
-    suspend fun getQuizById(quizId: String): Quiz?
-    suspend fun getQuestionsByQuizId(quizId: String): List<QuestionUi>
-
-    suspend fun submitQuizResult(
-        userId: String,
-        quizId: String,
-        userAnswers: Map<String, Int> // ✅ questionId -> selectedIndex
-    )
-}
 
 class QuizRepositoryImpl(
-    private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
+    private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
 ) : QuizRepository {
 
-    private companion object {
-        const val QUIZZES = "quizzes"
-        const val QUESTIONS = "questions"
-        const val USERS = "users"
-        const val QUIZ_RESULTS = "quizResults"
-        const val QUIZ_ATTEMPTS = "quiz_attempts"
-    }
-
     override suspend fun getQuizById(quizId: String): Quiz? {
-        return try {
-            val doc = firestore.collection(QUIZZES).document(quizId).get().await()
-            if (!doc.exists()) return null
-            val quiz = doc.toObject(Quiz::class.java) ?: return null
-            quiz.copy(id = doc.id)
-        } catch (e: Exception) {
-            Log.e("QuizRepository", "getQuizById error", e)
-            null
-        }
+        if (quizId.isBlank()) return null
+        val doc = db.collection("quizzes").document(quizId).get().await()
+        if (!doc.exists()) return null
+        return doc.toQuizOrNull()
     }
 
     override suspend fun getQuestionsByQuizId(quizId: String): List<QuestionUi> {
-        return try {
-            val snap = firestore.collection(QUIZZES)
-                .document(quizId)
-                .collection(QUESTIONS)
-                .get()
-                .await()
+        if (quizId.isBlank()) return emptyList()
+        val snap = db.collection("quizzes")
+            .document(quizId)
+            .collection("questions")
+            .get()
+            .await()
 
-            snap.documents.mapNotNull { d ->
-                val q = d.toObject(QuestionFirestore::class.java) ?: return@mapNotNull null
-                QuestionUi(
-                    id = d.id,
-                    question = q.questionText,
-                    options = q.options,
-                    correctAnswerIndex = q.correctAnswerIndex.toInt(),
-                    explanation = q.explanation,
-                    imageUrl = q.imageUrl
+        // optional: urutkan berdasarkan id kalau id angka "1","2","3"
+        return snap.documents
+            .mapNotNull { it.toQuestionUiOrNull() }
+            .sortedBy { it.id.toIntOrNull() ?: Int.MAX_VALUE }
+    }
+
+    override suspend fun getUser(userId: String): User? {
+        if (userId.isBlank()) return null
+        val doc = db.collection("users").document(userId).get().await()
+        if (!doc.exists()) return null
+        return doc.toUserOrNull()
+    }
+
+    override suspend fun saveQuizAttempt(
+        userId: String?,
+        quizId: String,
+        quizTitle: String,
+        score: Int,
+        percentage: Int,
+        correctAnswers: Int,
+        totalQuestions: Int,
+        maxScore: Int,
+        pointsEarned: Int,
+        userAnswersIndex: Map<String, Int>
+    ) {
+        val data = hashMapOf<String, Any>(
+            "quizId" to quizId,
+            "quizTitle" to quizTitle,
+            "score" to score,
+            "percentage" to percentage,
+            "correctAnswers" to correctAnswers,
+            "totalQuestions" to totalQuestions,
+            "maxScore" to maxScore,
+            "pointsEarned" to pointsEarned,
+            "userAnswersIndex" to userAnswersIndex,
+            "submittedAt" to FieldValue.serverTimestamp()
+        )
+
+        if (!userId.isNullOrBlank()) data["userId"] = userId
+
+        // ✅ kalau passed (pointsEarned > 0) tandai passedAt
+        if (pointsEarned > 0) {
+            data["passedAt"] = FieldValue.serverTimestamp()
+        }
+
+        db.collection("quiz_attempts").add(data).await()
+    }
+
+    override suspend fun addUserPoints(userId: String, points: Int) {
+        if (userId.isBlank() || points <= 0) return
+        db.collection("users").document(userId)
+            .update(
+                mapOf(
+                    "totalScore" to FieldValue.increment(points.toLong())
+                    // kalau kamu mau weeklyScore dll bisa ditambah disini
                 )
-            }
-        } catch (e: Exception) {
-            Log.e("QuizRepository", "getQuestionsByQuizId error", e)
-            emptyList()
+            )
+            .await()
+    }
+
+    override suspend fun hasUserPassedQuiz(userId: String, quizId: String): Boolean {
+        if (userId.isBlank() || quizId.isBlank()) return false
+
+        val snap = db.collection("quiz_attempts")
+            .whereEqualTo("userId", userId)
+            .whereEqualTo("quizId", quizId)
+            .limit(20) // ambil beberapa aja, nanti difilter di client
+            .get()
+            .await()
+
+        if (snap.isEmpty) return false
+
+        // ✅ cek di client: pernah ada pointsEarned > 0 (berarti pernah pass)
+        return snap.documents.any { doc ->
+            val points = doc.getLong("pointsEarned") ?: 0L
+            points > 0L
         }
     }
 
-    override suspend fun submitQuizResult(
-        userId: String,
-        quizId: String,
-        userAnswers: Map<String, Int>
-    ) {
-        val userRef = firestore.collection(USERS).document(userId)
-        val quizRef = firestore.collection(QUIZZES).document(quizId)
-        val userQuizResultRef = userRef.collection(QUIZ_RESULTS).document(quizId)
-        val attemptsRef = firestore.collection(QUIZ_ATTEMPTS).document() // ✅ random id
+    override suspend fun getLatestAttemptAnswers(userId: String, quizId: String): Map<String, Int> {
+        if (userId.isBlank() || quizId.isBlank()) return emptyMap()
 
-        try {
-            val questionsSnap = quizRef.collection(QUESTIONS).get().await()
+        val snap = db.collection("quiz_attempts")
+            .whereEqualTo("userId", userId)
+            .whereEqualTo("quizId", quizId)
+            .orderBy("submittedAt")
+            .limitToLast(1)
+            .get()
+            .await()
 
-            // questionId -> correctIndex
-            val correctMap: Map<String, Int> = questionsSnap.documents.associate { d ->
-                val idx = d.getLong("correctAnswerIndex")?.toInt() ?: 0
-                d.id to idx
+        val doc = snap.documents.firstOrNull() ?: return emptyMap()
+        val raw = doc.get("userAnswersIndex") as? Map<*, *> ?: return emptyMap()
+
+        return raw.entries.mapNotNull { (k, v) ->
+            val key = k as? String ?: return@mapNotNull null
+            val value = when (v) {
+                is Long -> v.toInt()
+                is Int -> v
+                else -> return@mapNotNull null
             }
-
-            val totalQuestions = correctMap.size
-            var correctCount = 0
-
-            userAnswers.forEach { (questionId, selectedIdx) ->
-                val correctIdx = correctMap[questionId]
-                if (correctIdx != null && selectedIdx == correctIdx) correctCount++
-            }
-
-            // simple scoring: percentage * 100 (atau pakai score = correctCount)
-            val score = if (totalQuestions == 0) 0 else (correctCount * 100) / totalQuestions
-            val percentage = score
-            val maxScore = 100
-
-            firestore.runTransaction { tx ->
-                val quizDoc = tx.get(quizRef)
-                val userDoc = tx.get(userRef)
-                val existingResult = tx.get(userQuizResultRef)
-
-                // ===== update user score =====
-                // (kalau weekly system kamu masih dipakai)
-                val cal = Calendar.getInstance()
-                val currentWeek = cal.get(Calendar.WEEK_OF_YEAR)
-                val prevWeek = userDoc.getLong("weekOfYear")?.toInt() ?: 0
-                val existingWeekly = userDoc.getLong("weeklyScore") ?: 0L
-
-                val newWeekly = if (prevWeek != currentWeek) score.toLong() else existingWeekly + score
-
-                tx.update(
-                    userRef, mapOf(
-                        "totalScore" to FieldValue.increment(score.toLong()),
-                        "weeklyScore" to newWeekly,
-                        "weekOfYear" to currentWeek
-                    )
-                )
-
-                // ===== save to users/{uid}/quizResults/{quizId} =====
-                val resultData = hashMapOf(
-                    "quizId" to quizId,
-                    "quizTitle" to (quizDoc.getString("title") ?: ""),
-                    "quizBannerUrl" to quizDoc.getString("bannerUrl"),
-                    "lastScore" to score.toLong(),
-                    "correctAnswers" to correctCount.toLong(),
-                    "totalQuestions" to totalQuestions.toLong(),
-                    "lastPlayedAt" to Timestamp.now()
-                )
-                tx.set(userQuizResultRef, resultData)
-
-                // ===== optional: insert quiz_attempts (schema screenshot) =====
-                val attemptData = hashMapOf(
-                    "userId" to userId,
-                    "quizId" to quizId,
-                    "quizTitle" to (quizDoc.getString("title") ?: ""),
-                    "score" to score,
-                    "percentage" to percentage,
-                    "maxScore" to maxScore,
-                    "submittedAt" to Timestamp.now()
-                )
-                tx.set(attemptsRef, attemptData)
-
-                // ===== update quiz stats: participants + averageScore =====
-                val oldParticipants = quizDoc.getLong("totalParticipants") ?: 0L
-                val oldAvg = quizDoc.getDouble("averageScore") ?: 0.0
-
-                val newParticipants = oldParticipants + 1
-                val newAvg =
-                    ((oldAvg * oldParticipants) + score.toDouble()) / newParticipants.toDouble()
-
-                tx.update(
-                    quizRef, mapOf(
-                        "totalParticipants" to newParticipants,
-                        "averageScore" to newAvg
-                    )
-                )
-
-                // kalau kamu mau participant unik:
-                // if (!existingResult.exists()) { increment participants } else jangan
-                // (tapi screenshot kamu kelihatan totalParticipants ada, jadi pilih salah satu)
-            }.await()
-
-        } catch (e: Exception) {
-            Log.e("QuizRepository", "submitQuizResult failed", e)
-            throw e
-        }
+            key to value
+        }.toMap()
     }
 }
