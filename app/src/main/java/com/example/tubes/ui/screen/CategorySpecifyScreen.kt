@@ -7,11 +7,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -24,78 +20,22 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import com.example.tubes.data.model.Quiz
-import com.example.tubes.data.model.User
-import com.example.tubes.data.repository.HomeRepositoryImpl
 import com.example.tubes.ui.screen.home.models.QuizUi
-import com.example.tubes.ui.screen.home.models.toUi
 import com.example.tubes.util.formatRelativeTime
-import kotlinx.coroutines.launch
+import com.example.tubes.viewmodel.CategorySpecifyViewModel
 
 @Composable
 fun CategorySpecifyScreen(
     categoryId: String,
     categoryName: String,
+    viewModel: CategorySpecifyViewModel,
     onBackClick: () -> Unit = {},
-    onQuizClick: (String) -> Unit = {}        // kirim quizId saat klik card
+    onQuizClick: (String) -> Unit = {}
 ) {
-    val repo = remember { HomeRepositoryImpl() }
+    val uiState by viewModel.uiState.collectAsState()
 
-    var uiState by remember { mutableStateOf(CategorySpecifyUiState()) }
-    val scope = rememberCoroutineScope()
-
-    // Load data sekali tiap categoryId berubah
     LaunchedEffect(categoryId) {
-        scope.launch {
-            uiState = uiState.copy(isLoading = true, error = null)
-
-            try {
-                // 1. Ambil semua quiz untuk categoryId ini
-                val quizzes: List<Quiz> = repo.getQuizzesByCategory(categoryId)
-
-                // 2. Ambil USER lengkap untuk setiap quiz (supaya dapat name + avatarUrl)
-                val authorCache = mutableMapOf<String, User>()
-                quizzes.forEach { quiz ->
-                    val authorId = quiz.authorId
-                    if (authorId.isNotEmpty() && !authorCache.containsKey(authorId)) {
-                        val user = repo.getUser(authorId)
-                        if (user != null) {
-                            authorCache[authorId] = user
-                        }
-                    }
-                }
-
-                // 3. Mapping ke QuizUi
-                val quizUiList: List<QuizUi> = quizzes.map { quiz ->
-                    val author = authorCache[quiz.authorId]
-                    val authorName = author?.fullName?.takeIf { it.isNotBlank() }
-                        ?: author?.email?.substringBefore("@")
-                        ?: "Unknown"
-                    val avatarUrl = author?.avatarUrl
-
-                    quiz.toUi(
-                        authorName = authorName,
-                        authorAvatarUrl = avatarUrl
-                    )
-                }
-
-                val allCategories = repo.getCategories()
-                val thisCategory = allCategories.firstOrNull { it.categoryId == categoryId }
-
-                uiState = CategorySpecifyUiState(
-                    isLoading = false,
-                    quizzes = quizUiList,
-                    error = null,
-                    categoryBannerUrl = thisCategory?.bannerUrl
-                )
-
-            } catch (e: Exception) {
-                uiState = uiState.copy(
-                    isLoading = false,
-                    error = e.message ?: "Unknown error"
-                )
-            }
-        }
+        viewModel.load(categoryId)
     }
 
     Scaffold(
@@ -103,7 +43,7 @@ fun CategorySpecifyScreen(
             CategoryTopBar(
                 title = categoryName,
                 onBackClick = onBackClick,
-                onSearchToggle = { /* kalau mau search di sini nanti */ }
+                onSearchToggle = {}
             )
         }
     ) { paddingValues ->
@@ -114,32 +54,23 @@ fun CategorySpecifyScreen(
                 .padding(paddingValues)
                 .background(Color(0xFFF5F5FF))
         ) {
-
             when {
-                uiState.isLoading -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator()
-                    }
-                }
+                uiState.isLoading -> Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) { CircularProgressIndicator() }
 
-                uiState.error != null -> {
-                    Text(
-                        text = "Error: ${uiState.error}",
-                        color = Color.Red,
-                        modifier = Modifier.align(Alignment.Center)
-                    )
-                }
+                uiState.error != null -> Text(
+                    text = "Error: ${uiState.error}",
+                    color = Color.Red,
+                    modifier = Modifier.align(Alignment.Center)
+                )
 
-                uiState.quizzes.isEmpty() -> {
-                    Text(
-                        text = "No quiz yet for this category",
-                        color = Color.Gray,
-                        modifier = Modifier.align(Alignment.Center)
-                    )
-                }
+                uiState.quizzes.isEmpty() -> Text(
+                    text = "No quiz yet for this category",
+                    color = Color.Gray,
+                    modifier = Modifier.align(Alignment.Center)
+                )
 
                 else -> {
                     LazyColumn(
@@ -147,25 +78,19 @@ fun CategorySpecifyScreen(
                         contentPadding = PaddingValues(16.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        // Banner kategori dari DB
                         item {
-                            CategorySpecifyBanner(
-                                bannerUrl = uiState.categoryBannerUrl
-                            )
+                            CategorySpecifyBanner(bannerUrl = uiState.categoryBannerUrl)
                         }
 
-                        // 🔹 TOTAL QUIZ DI KATEGORI INI
                         item {
                             Text(
                                 text = "${uiState.quizzes.size} Quiz",
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFF1A1A1A),
-                                modifier = Modifier.padding(top = 4.dp, bottom = 4.dp)
+                                color = Color(0xFF1A1A1A)
                             )
                         }
 
-                        // List quiz
                         items(uiState.quizzes) { quiz ->
                             QuizCard(
                                 quiz = quiz,
@@ -174,31 +99,17 @@ fun CategorySpecifyScreen(
                         }
                     }
                 }
-
             }
         }
     }
 }
 
 /* =========================
- *   UI STATE
- * ========================= */
-
-data class CategorySpecifyUiState(
-    val isLoading: Boolean = true,
-    val quizzes: List<QuizUi> = emptyList(),
-    val error: String? = null,
-    val categoryBannerUrl: String? = null
-)
-
-/* =========================
  *   SUB-COMPONENTS
  * ========================= */
 
 @Composable
-private fun CategorySpecifyBanner(
-    bannerUrl: String?
-) {
+private fun CategorySpecifyBanner(bannerUrl: String?) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -218,10 +129,7 @@ private fun CategorySpecifyBanner(
                     .fillMaxSize()
                     .background(
                         Brush.verticalGradient(
-                            colors = listOf(
-                                Color(0xFF1A237E),
-                                Color(0xFF283593)
-                            )
+                            colors = listOf(Color(0xFF1A237E), Color(0xFF283593))
                         )
                     )
             )
@@ -239,12 +147,8 @@ private fun QuizCard(
             .fillMaxWidth()
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color.White
-        ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 2.dp
-        )
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
             modifier = Modifier
@@ -252,8 +156,6 @@ private fun QuizCard(
                 .padding(12.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-
-            // Thumbnail quiz
             Box(
                 modifier = Modifier
                     .size(96.dp)
@@ -269,7 +171,6 @@ private fun QuizCard(
                     )
                 }
 
-                // Badge jumlah soal
                 Box(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
@@ -287,11 +188,8 @@ private fun QuizCard(
                 }
             }
 
-            // Info quiz
             Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight(),
+                modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
@@ -303,7 +201,6 @@ private fun QuizCard(
                     overflow = TextOverflow.Ellipsis
                 )
 
-                // 🔹 Baris waktu + total play
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -333,7 +230,6 @@ private fun QuizCard(
                             .clip(CircleShape)
                             .background(Color(0xFFE0E0E0))
                     ) {
-                        // 🔹 Avatar author
                         if (!quiz.authorAvatarUrl.isNullOrEmpty()) {
                             AsyncImage(
                                 model = quiz.authorAvatarUrl,
@@ -343,6 +239,7 @@ private fun QuizCard(
                             )
                         }
                     }
+
                     Text(
                         text = quiz.authorName,
                         fontSize = 13.sp,

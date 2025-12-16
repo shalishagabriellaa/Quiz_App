@@ -10,31 +10,15 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import kotlinx.coroutines.tasks.await
 
-class HomeRepositoryImpl : HomeRepository {
+class HomeRepositoryImpl(
+    private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
+) : HomeRepository {
 
-    private val db = FirebaseFirestore.getInstance()
-
-    override suspend fun getUser(uid: String): User? {
-        Log.d("HomeRepository", "Mulai getUser | UID: $uid")
-
-        return try {
-            val documentSnapshot = db.collection("users")
-                .document(uid)
-                .get()
-                .await()
-
-            if (documentSnapshot.exists()) {
-                val user = documentSnapshot.toObject(User::class.java)
-                Log.d("HomeRepository", "getUser BERHASIL | ${user?.fullName}")
-                user
-            } else {
-                Log.w("HomeRepository", "getUser | Dokumen '$uid' tidak ditemukan.")
-                null
-            }
-        } catch (e: Exception) {
-            Log.e("HomeRepository", "getUser EXCEPTION", e)
-            null
-        }
+    override suspend fun getUser(userId: String): User? {
+        if (userId.isBlank()) return null
+        val doc = db.collection("users").document(userId).get().await()
+        if (!doc.exists()) return null
+        return doc.toUserOrNull()
     }
 
     override suspend fun getCategories(): List<Category> {
@@ -42,6 +26,17 @@ class HomeRepositoryImpl : HomeRepository {
         return snapshot.documents.mapNotNull { doc ->
             doc.toObject(Category::class.java)
         }
+    }
+
+    override suspend fun getCategoryByCategoryId(categoryId: String): Category? {
+        val snap = db.collection("categories")
+            .whereEqualTo("categoryId", categoryId)
+            .limit(1)
+            .get()
+            .await()
+
+        val doc = snap.documents.firstOrNull() ?: return null
+        return doc.toObject(Category::class.java)
     }
 
     override suspend fun getTopAuthors(): List<User> {
@@ -98,15 +93,12 @@ class HomeRepositoryImpl : HomeRepository {
     }
 
     override suspend fun getQuizzesByCategory(categoryId: String): List<Quiz> {
-        val snapshot = db.collection("quizzes")
+        val snap = db.collection("quizzes")
             .whereEqualTo("categoryId", categoryId)
             .get()
             .await()
 
-        return snapshot.documents.map { doc ->
-            val quiz = doc.toObject(Quiz::class.java) ?: Quiz()
-            quiz.copy(id = doc.id)
-        }
+        return snap.documents.mapNotNull { it.toQuizOrNull() }
     }
 
     // Dipakai TestInformationScreen (kalau kamu mau)
@@ -120,6 +112,15 @@ class HomeRepositoryImpl : HomeRepository {
             ?: throw IllegalStateException("Quiz not found")
 
         return quiz.copy(id = snapshot.id)
+    }
+
+    override suspend fun getAttemptCountByQuizId(quizId: String): Long {
+        if (quizId.isBlank()) return 0L
+        val snap = db.collection("quiz_attempts")
+            .whereEqualTo("quizId", quizId)
+            .get()
+            .await()
+        return snap.size().toLong()
     }
 
     override suspend fun getUserQuizResults(userId: String): List<UserQuizResult> {

@@ -62,6 +62,9 @@ fun StudentNavigation() {
     val authState by authViewModel.authState.collectAsState()
 
     val homeRepository = remember { HomeRepositoryImpl() }
+    val categorySpecifyViewModel: CategorySpecifyViewModel = viewModel(
+        factory = CategorySpecifyViewModelFactory(homeRepository)
+    )
     val homeViewModel: HomeViewModel = viewModel(
         factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -280,9 +283,11 @@ fun StudentNavigation() {
         composable("categorySpecify/{categoryId}/{categoryName}") { backStackEntry ->
             val categoryId = backStackEntry.arguments?.getString("categoryId") ?: ""
             val categoryName = backStackEntry.arguments?.getString("categoryName") ?: ""
+
             CategorySpecifyScreen(
                 categoryId = categoryId,
                 categoryName = categoryName,
+                viewModel = categorySpecifyViewModel,
                 onBackClick = { navController.popBackStack() },
                 onQuizClick = { quizId -> navController.navigate("testInfo/$quizId") }
             )
