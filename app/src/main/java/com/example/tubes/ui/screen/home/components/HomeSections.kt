@@ -93,47 +93,47 @@ fun HomeSection(
 
         Spacer(Modifier.height(22.dp))
 
-        /* ---------- Banner ---------- */
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(16.dp))
-                .background(Color(0xFF27459F))
-                .padding(18.dp)
-        ) {
-            Column {
-                Text(
-                    "Play quiz together with\nyour friends now!",
-                    color = Color.White,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    lineHeight = 22.sp
-                )
-                Spacer(Modifier.height(12.dp))
-                Button(
-                    onClick = { /* TODO */ },
-                    shape = RoundedCornerShape(50),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.White)
-                ) { Text("Find Friends", color = Color(0xFF27459F)) }
-            }
-
-            Row(
-                modifier = Modifier.align(Alignment.TopEnd),
-                horizontalArrangement = Arrangement.spacedBy((-8).dp)
-            ) {
-                repeat(5) {
-                    Box(
-                        Modifier
-                            .size(28.dp)
-                            .clip(CircleShape)
-                            .background(Color(0x55FFFFFF))
-                            .border(2.dp, Color(0x33FFFFFF), CircleShape)
-                    )
-                }
-            }
-        }
-
-        Spacer(Modifier.height(26.dp))
+//        /* ---------- Banner ---------- */
+//        Box(
+//            modifier = Modifier
+//                .fillMaxWidth()
+//                .clip(RoundedCornerShape(16.dp))
+//                .background(Color(0xFF27459F))
+//                .padding(18.dp)
+//        ) {
+//            Column {
+//                Text(
+//                    "Play quiz together with\nyour friends now!",
+//                    color = Color.White,
+//                    fontSize = 16.sp,
+//                    fontWeight = FontWeight.ExtraBold,
+//                    lineHeight = 22.sp
+//                )
+//                Spacer(Modifier.height(12.dp))
+//                Button(
+//                    onClick = { /* TODO */ },
+//                    shape = RoundedCornerShape(50),
+//                    colors = ButtonDefaults.buttonColors(containerColor = Color.White)
+//                ) { Text("Find Friends", color = Color(0xFF27459F)) }
+//            }
+//
+//            Row(
+//                modifier = Modifier.align(Alignment.TopEnd),
+//                horizontalArrangement = Arrangement.spacedBy((-8).dp)
+//            ) {
+//                repeat(5) {
+//                    Box(
+//                        Modifier
+//                            .size(28.dp)
+//                            .clip(CircleShape)
+//                            .background(Color(0x55FFFFFF))
+//                            .border(2.dp, Color(0x33FFFFFF), CircleShape)
+//                    )
+//                }
+//            }
+//        }
+//
+//        Spacer(Modifier.height(26.dp))
 
         /* ---------- Trending Quiz ---------- */
         SectionHeader(
@@ -154,38 +154,38 @@ fun HomeSection(
         Spacer(Modifier.height(24.dp))
 
         /* ---------- Top Authors ---------- */
-        SectionHeader(
-            title = "Top Authors",
-            onSeeAll = onTopAuthorsSeeAll
-        )
-        Spacer(Modifier.height(12.dp))
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            items(topAuthors) { author ->
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.width(60.dp)
-                ) {
-                    AsyncImage(
-                        model = author.avatarUrl,
-                        contentDescription = "Avatar for ${author.fullName}",
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .size(58.dp)
-                            .clip(CircleShape)
-                            .border(2.dp, Color.Black, CircleShape)
-                            .background(Color(0x33FFFFFF))
-                    )
-                    Spacer(Modifier.height(6.dp))
-                    Text(
-                        author.fullName,
-                        color = Color.Black,
-                        fontSize = 12.sp,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-            }
-        }
+//        SectionHeader(
+//            title = "Top Authors",
+//            onSeeAll = onTopAuthorsSeeAll
+//        )
+//        Spacer(Modifier.height(12.dp))
+//        LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+//            items(topAuthors) { author ->
+//                Column(
+//                    horizontalAlignment = Alignment.CenterHorizontally,
+//                    modifier = Modifier.width(60.dp)
+//                ) {
+//                    AsyncImage(
+//                        model = author.avatarUrl,
+//                        contentDescription = "Avatar for ${author.fullName}",
+//                        contentScale = ContentScale.Crop,
+//                        modifier = Modifier
+//                            .size(58.dp)
+//                            .clip(CircleShape)
+//                            .border(2.dp, Color.Black, CircleShape)
+//                            .background(Color(0x33FFFFFF))
+//                    )
+//                    Spacer(Modifier.height(6.dp))
+//                    Text(
+//                        author.fullName,
+//                        color = Color.Black,
+//                        fontSize = 12.sp,
+//                        maxLines = 1,
+//                        overflow = TextOverflow.Ellipsis
+//                    )
+//                }
+//            }
+//        }
 
         Spacer(Modifier.height(24.dp))
 

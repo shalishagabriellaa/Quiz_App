@@ -102,14 +102,14 @@ fun QuizBottomBar(
             onClick = onQrClick
         )
 
-        Box(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .offset(y = (-8).dp)
-                .size(width = 120.dp, height = 6.dp)
-                .clip(RoundedCornerShape(50))
-                .background(Color.White.copy(alpha = 0.95f))
-        )
+//        Box(
+//            modifier = Modifier
+//                .align(Alignment.BottomCenter)
+//                .offset(y = (-8).dp)
+//                .size(width = 120.dp, height = 6.dp)
+//                .clip(RoundedCornerShape(50))
+//                .background(Color.White.copy(alpha = 0.95f))
+//        )
     }
 }
 
