@@ -28,6 +28,8 @@ sealed class TeacherRoute(val route: String) {
             "teacher_quiz_qr/$quizId"
     }
     object Bank : TeacherRoute("bank")
+
+    object Notifications : TeacherRoute("notifications")
     object Monitoring : TeacherRoute("monitoring")
     object Profile : TeacherRoute("profile")
 }

@@ -23,6 +23,7 @@ import com.example.tubes.data.AuthState
 import com.example.tubes.data.cloudinary.CloudinaryManager
 import com.example.tubes.data.repository.CloudinaryRepositoryImpl
 import com.example.tubes.data.repository.TeacherAnalyticsRepositoryImpl
+import com.example.tubes.data.repository.TeacherNotificationRepositoryImpl
 import com.example.tubes.data.repository.TeacherProfileRepositoryImpl
 import com.example.tubes.data.repository.TeacherQuestionBankRepositoryImpl
 import com.example.tubes.data.repository.TeacherQuestionRepositoryImpl
@@ -31,6 +32,7 @@ import com.example.tubes.ui.screen.teacher.QuizPreviewScreen
 import com.example.tubes.ui.screen.teacher.TeacherAddQuestionScreen
 import com.example.tubes.ui.screen.teacher.TeacherAnalyticsScreen
 import com.example.tubes.ui.screen.teacher.TeacherCreateQuizScreen
+import com.example.tubes.ui.screen.teacher.TeacherNotificationScreen
 import com.example.tubes.ui.screen.teacher.TeacherProfileScreen
 import com.example.tubes.ui.screen.teacher.TeacherQuestionBankScreen
 import com.example.tubes.ui.screen.teacher.TeacherQuizListScreen
@@ -44,6 +46,8 @@ import com.example.tubes.viewmodel.TeacherAnalyticsViewModel
 import com.example.tubes.viewmodel.TeacherAnalyticsViewModelFactory
 import com.example.tubes.viewmodel.TeacherCreateQuizViewModel
 import com.example.tubes.viewmodel.TeacherCreateQuizViewModelFactory
+import com.example.tubes.viewmodel.TeacherNotificationViewModel
+import com.example.tubes.viewmodel.TeacherNotificationViewModelFactory
 import com.example.tubes.viewmodel.TeacherProfileViewModel
 import com.example.tubes.viewmodel.TeacherProfileViewModelFactory
 import com.example.tubes.viewmodel.TeacherQuestionBankViewModel
@@ -100,8 +104,14 @@ fun TeacherAppNavigation(
 
             // DASHBOARD
             composable(TeacherRoute.Dashboard.route) {
-                TeacherDashboard(authorId = authorId)
+                TeacherDashboard(
+                    authorId = authorId,
+                    onOpenNotifications = {
+                        navController.navigate(TeacherRoute.Notifications.route)
+                    }
+                )
             }
+
 
             // QUIZ LIST
             composable(TeacherRoute.Quizzes.route) { backStackEntry ->
@@ -382,6 +392,29 @@ fun TeacherAppNavigation(
                     viewModel = viewModel
                 )
             }
+            composable(TeacherRoute.Notifications.route) { backStackEntry ->
+
+                if (authorId == null) return@composable
+
+                val repo = TeacherNotificationRepositoryImpl(
+                    FirebaseFirestore.getInstance()
+                )
+
+                val viewModel: TeacherNotificationViewModel =
+                    viewModel(
+                        backStackEntry,
+                        factory = TeacherNotificationViewModelFactory(
+                            repository = repo,
+                            userId = authorId
+                        )
+                    )
+
+                TeacherNotificationScreen(
+                    viewModel = viewModel,
+                    onBack = { navController.popBackStack() }
+                )
+            }
+
         }
     }
 }

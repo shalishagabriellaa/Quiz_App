@@ -2,6 +2,7 @@ package com.example.tubes.ui.teacher
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -31,6 +32,7 @@ import com.example.tubes.viewmodel.QuizWithStats
 @Composable
 fun TeacherDashboard(
     authorId: String?,
+    onOpenNotifications: () -> Unit,
     authorViewModel: AuthorViewModel = viewModel()
 ) {
     val uiState by authorViewModel.uiState.collectAsState()
@@ -49,14 +51,19 @@ fun TeacherDashboard(
             .background(Color(0xFF2E3856))
             .verticalScroll(scrollState)
     ) {
-        HeaderSection(authorName = uiState.authorName)
+        HeaderSection(
+            authorName = uiState.authorName,
+            unreadCount = uiState.unreadNotificationCount, // nanti dari ViewModel
+            onNotificationClick = onOpenNotifications
+        )
+
         SearchBarSection()
 
         if (uiState.isLoading) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 100.dp), // Beri jarak dari atas
+                    .padding(vertical = 100.dp),
                 contentAlignment = Alignment.Center
             ) {
                 CircularProgressIndicator(color = Color.White)
@@ -82,33 +89,20 @@ fun TeacherDashboard(
 }
 
 @Composable
-fun HeaderSection(authorName: String) {
+fun HeaderSection(
+    authorName: String,
+    unreadCount: Int,
+    onNotificationClick: () -> Unit
+) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp),
+        modifier = Modifier.fillMaxWidth().padding(16.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                imageVector = Icons.Default.Settings,
-                contentDescription = "Settings",
-                tint = Color.White,
-                modifier = Modifier
-                    .size(40.dp)
-                    .background(Color(0xFF3D4A6B), CircleShape)
-                    .padding(8.dp)
-            )
-            Spacer(modifier = Modifier.width(12.dp))
-            Text(
-                text = "Welcome $authorName",
-                color = Color.White,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.SemiBold
-            )
-        }
-        Row {
+
+        Text("Welcome $authorName", color = Color.White)
+
+        Box {
             Icon(
                 imageVector = Icons.Default.Notifications,
                 contentDescription = "Notifications",
@@ -117,14 +111,24 @@ fun HeaderSection(authorName: String) {
                     .size(40.dp)
                     .background(Color(0xFF3D4A6B), CircleShape)
                     .padding(8.dp)
+                    .clickable(onClick = onNotificationClick)
             )
-            Spacer(modifier = Modifier.width(8.dp))
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFFFF8A80)) // Placeholder profile pic
-            )
+
+            if (unreadCount > 0) {
+                Box(
+                    modifier = Modifier
+                        .size(16.dp)
+                        .background(Color.Red, CircleShape)
+                        .align(Alignment.TopEnd),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        unreadCount.toString(),
+                        color = Color.White,
+                        fontSize = 10.sp
+                    )
+                }
+            }
         }
     }
 }

@@ -1,5 +1,7 @@
 package com.example.tubes.viewmodel
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.tubes.data.model.RecentQuizActivity
@@ -14,6 +16,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 
+@RequiresApi(Build.VERSION_CODES.O)
 class TeacherProfileViewModel(
     private val repository: TeacherProfileRepository,
     private val authorId: String
@@ -27,6 +30,7 @@ class TeacherProfileViewModel(
         loadProfile()
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     private fun loadProfile() {
         viewModelScope.launch {
 
@@ -65,6 +69,7 @@ class TeacherProfileViewModel(
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     private fun buildWeeklyQuizStats(
         quizzes: List<RecentQuizActivity>
     ): List<Int> {

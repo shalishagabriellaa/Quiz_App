@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-data class NotificationUiState(
+data class TeacherNotificationUiState(
     val isLoading: Boolean = true,
     val notifications: List<TeacherNotificationUi> = emptyList()
 )
@@ -19,7 +19,7 @@ class TeacherNotificationViewModel(
 ) : ViewModel() {
 
     private val _uiState =
-        MutableStateFlow(NotificationUiState())
+        MutableStateFlow(TeacherNotificationUiState())
     val uiState = _uiState.asStateFlow()
 
     init {
@@ -32,17 +32,18 @@ class TeacherNotificationViewModel(
                 repository.getNotificationsByUser(userId)
 
             _uiState.value =
-                NotificationUiState(
+                TeacherNotificationUiState(
                     isLoading = false,
                     notifications = data
                 )
         }
     }
 
-    fun markAsRead(notificationId: String) {
+    fun markAllAsRead() {
         viewModelScope.launch {
-            repository.markAsRead(notificationId)
+            repository.markAllAsRead(userId)
             loadNotifications()
         }
     }
 }
+

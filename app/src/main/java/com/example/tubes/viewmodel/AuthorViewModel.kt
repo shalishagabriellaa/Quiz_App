@@ -40,7 +40,8 @@ data class TeacherDashboardUiState(
     val averageScoresPerQuiz: List<QuizWithStats> = emptyList(),
     val recentQuizzes: List<QuizWithStats> = emptyList(),
     val recentSubmissions: List<ParticipantSubmission> = emptyList(),
-    val authorName: String = "Teacher"
+    val authorName: String = "Teacher",
+    val unreadNotificationCount: Int = 0
 )
 
 // Data class AuthorStats tetap sama
