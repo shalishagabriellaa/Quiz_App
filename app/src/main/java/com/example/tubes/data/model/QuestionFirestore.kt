@@ -9,5 +9,9 @@ data class QuestionFirestore(
     val options: List<String> = emptyList(),
     val correctAnswerIndex: Long = 0L,
     val explanation: String = "",
-    val imageUrl: String? = null
+    val imageUrl: String? = null,
+    val questionId: String = "",
+    val quizId: String = "",
+    val text: String = "",
+    val answer: String = "",
 )

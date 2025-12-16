@@ -18,6 +18,7 @@ foundationVersion = "1.9.5"
 firebaseCrashlyticsBuildtools = "3.0.6"
 roomCompilerProcessingTesting = "2.8.4"
 material3 = "1.4.0"
+runtime = "1.10.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -44,6 +45,7 @@ androidx-foundation = { group = "androidx.compose.foundation", name = "foundatio
 firebase-crashlytics-buildtools = { group = "com.google.firebase", name = "firebase-crashlytics-buildtools", version.ref = "firebaseCrashlyticsBuildtools" }
 androidx-room-compiler-processing-testing = { group = "androidx.room", name = "room-compiler-processing-testing", version.ref = "roomCompilerProcessingTesting" }
 androidx-material3 = { group = "androidx.compose.material3", name = "material3", version.ref = "material3" }
+androidx-compose-runtime = { group = "androidx.compose.runtime", name = "runtime", version.ref = "runtime" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

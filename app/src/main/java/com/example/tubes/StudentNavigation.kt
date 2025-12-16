@@ -596,6 +596,9 @@ private fun MainScreenWithBottomNav(
                         restoreState = true
                     }
                 },
+                onQrClick = {
+                    navController.navigate("qr_scan")
+                },
                 modifier = Modifier.align(Alignment.BottomCenter)
             )
 

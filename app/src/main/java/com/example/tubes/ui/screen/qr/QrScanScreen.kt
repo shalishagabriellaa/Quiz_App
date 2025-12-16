@@ -21,6 +21,7 @@ import com.example.tubes.data.repository.HomeRepositoryImpl
 import com.journeyapps.barcodescanner.DecoratedBarcodeView
 import com.journeyapps.barcodescanner.BarcodeCallback
 import com.journeyapps.barcodescanner.BarcodeResult
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
