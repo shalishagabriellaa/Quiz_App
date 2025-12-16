@@ -205,7 +205,8 @@ fun TeacherAppNavigation(
                 TeacherAddQuestionScreen(
                     viewModel = viewModel,
                     onFinished = { navController.popBackStack("quizzes", false) },
-                    onPreview = { navController.navigate("quiz_preview") }
+                    onPreview = { navController.navigate("quiz_preview") },
+                    onBack = { navController.popBackStack() }
                 )
             }
 
