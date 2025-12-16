@@ -9,7 +9,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -32,6 +32,56 @@ fun SettingScreen(
     onAboutQuorri: () -> Unit = {},
     onLogout: () -> Unit = {}
 ) {
+    // 🔥 STATE untuk popup logout
+    var showLogoutDialog by remember { mutableStateOf(false) }
+
+    // 🔔 POPUP KONFIRMASI LOGOUT
+    if (showLogoutDialog) {
+        AlertDialog(
+            onDismissRequest = { showLogoutDialog = false },
+            icon = {
+                Icon(
+                    Icons.Default.Warning,
+                    contentDescription = "Warning",
+                    tint = Color(0xFFF44336)
+                )
+            },
+            title = {
+                Text(
+                    text = "Logout Confirmation",
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Text(
+                    text = "Are you sure you want to log out from your account?",
+                    fontSize = 14.sp
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showLogoutDialog = false
+                        onLogout() // ✅ logout beneran
+                    }
+                ) {
+                    Text(
+                        "Logout",
+                        color = Color(0xFFF44336),
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showLogoutDialog = false }
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -114,7 +164,9 @@ fun SettingScreen(
                     backgroundColor = Color(0xFFF8B5B5),
                     iconTint = Color(0xFFEF5350),
                     textColor = Color(0xFFEF5350),
-                    onClick = onLogout
+                    onClick = {
+                        showLogoutDialog = true // 🔥 munculin popup
+                    }
                 )
             }
         }
