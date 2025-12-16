@@ -230,10 +230,7 @@ fun StudentNavigation() {
         // 🆕 ===== ABOUT QUORRI =====
         composable("aboutQuorri") {
             AboutQuorriScreen(
-                onBack = { navController.popBackStack() },
-                onContactUs = {
-                    // TODO: Open email or support form
-                }
+                onBack = { navController.popBackStack() }
             )
         }
 
