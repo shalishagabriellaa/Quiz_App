@@ -529,7 +529,7 @@ private fun MainScreenWithBottomNav(
                             userId = userId,
                             onBackClick = { bottomNavController.navigate("home") },
                             onResultClick = { quizId -> navController.navigate("answerExplanation/$quizId") },
-                                    viewModel = yourQuizzesViewModel
+                            viewModel = yourQuizzesViewModel
                         )
                     }
 
@@ -551,17 +551,17 @@ private fun MainScreenWithBottomNav(
                         ProfileScreen(
                             viewModel = profileViewModel,
                             onBackClick = { bottomNavController.navigate("home") },
-                            onNavigateToSettings = {
-                                navController.navigate(Screen.SettingScreen.route)
-                            },
-                            onNavigateToQuizHistory = {
-                                navController.navigate("quizHistory/$userId")
-                            },
-                            onNavigateToFollowers = {
-                                navController.navigate("followers/$userId")
-                            },
-                            onNavigateToFollowing = {
-                                navController.navigate("following/$userId")
+                            onNavigateToSettings = { navController.navigate(Screen.SettingScreen.route) },
+                            onNavigateToQuizHistory = { navController.navigate("quizHistory/$userId") },
+                            onNavigateToFollowers = { navController.navigate("followers/$userId") },
+                            onNavigateToFollowing = { navController.navigate("following/$userId") },
+                            onNavigateToHelpCenter = { navController.navigate("helpCenter") }, // ✅ ini
+                            onLogout = {
+                                authViewModel.logout()
+                                navController.navigate(Screen.LoginScreen.route) {
+                                    popUpTo(0) { inclusive = true }
+                                    launchSingleTop = true
+                                }
                             }
                         )
                     }

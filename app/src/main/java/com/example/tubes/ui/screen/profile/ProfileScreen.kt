@@ -38,52 +38,65 @@ fun ProfileScreen(
     onNavigateToSettings: () -> Unit = {},
     onNavigateToQuizHistory: () -> Unit = {},
     onNavigateToFollowers: () -> Unit = {},
-    onNavigateToFollowing: () -> Unit = {}
+    onNavigateToFollowing: () -> Unit = {},
+    onNavigateToHelpCenter: () -> Unit = {} // ✅ tambah ini
 ) {
     val uiState by viewModel.uiState.collectAsState()
+
+    // ✅ logout dialog state
+    var showLogoutDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewModel.loadProfile()
     }
 
+    // ✅ Popup konfirmasi logout (sama vibe kayak SettingScreen)
+    if (showLogoutDialog) {
+        AlertDialog(
+            onDismissRequest = { showLogoutDialog = false },
+            icon = {
+                Icon(
+                    Icons.Default.Warning,
+                    contentDescription = "Warning",
+                    tint = Color(0xFFF44336)
+                )
+            },
+            title = {
+                Text(
+                    text = "Logout Confirmation",
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Text(
+                    text = "Are you sure you want to log out from your account?",
+                    fontSize = 14.sp
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showLogoutDialog = false
+                        onLogout()
+                    }
+                ) {
+                    Text(
+                        "Logout",
+                        color = Color(0xFFF44336),
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLogoutDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
     Scaffold(
-//        topBar = {
-//            TopAppBar(
-//                title = {},
-//                navigationIcon = {},
-//                actions = {
-//                    // Edit Button di kanan atas
-//                    Button(
-//                        onClick = { /* TODO: Edit profile */ },
-//                        colors = ButtonDefaults.buttonColors(
-//                            containerColor = Color.White
-//                        ),
-//                        shape = RoundedCornerShape(20.dp),
-//                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-//                        modifier = Modifier
-//                            .height(36.dp)
-//                            .padding(end = 8.dp)
-//                    ) {
-//                        Icon(
-//                            Icons.Filled.Edit,
-//                            contentDescription = "Edit",
-//                            tint = DeepBlue,
-//                            modifier = Modifier.size(16.dp)
-//                        )
-//                        Spacer(Modifier.width(4.dp))
-//                        Text(
-//                            "Edit",
-//                            color = DeepBlue,
-//                            fontSize = 14.sp,
-//                            fontWeight = FontWeight.Medium
-//                        )
-//                    }
-//                },
-//                colors = TopAppBarDefaults.topAppBarColors(
-//                    containerColor = DeepBlue
-//                )
-//            )
-//        }
+        // topBar kamu memang dikomen, jadi aku biarin
     ) { paddingValues ->
         Box(
             modifier = Modifier
@@ -113,10 +126,9 @@ fun ProfileScreen(
                 }
 
                 else -> {
-                    Column(
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        // HEADER BIRU GELAP
+                    Column(modifier = Modifier.fillMaxSize()) {
+
+                        // HEADER
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -133,7 +145,7 @@ fun ProfileScreen(
                             )
                         }
 
-                        // KONTEN PUTIH ROUNDED
+                        // CONTENT
                         LazyColumn(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -148,14 +160,12 @@ fun ProfileScreen(
                                 bottom = 100.dp
                             )
                         ) {
-                            // Total Points Card (tanpa tombol View)
                             item {
                                 TotalPointsCard(totalPoints = uiState.totalPoints)
                             }
 
                             item { Spacer(Modifier.height(24.dp)) }
 
-                            // Menu Items
                             item {
                                 MenuItemCard(
                                     icon = Icons.Filled.Settings,
@@ -176,21 +186,21 @@ fun ProfileScreen(
 
                             item { Spacer(Modifier.height(12.dp)) }
 
+                            // ✅ Help Center sekarang jalan
                             item {
                                 MenuItemCard(
                                     icon = Icons.Filled.Help,
                                     title = "Help Center",
-                                    onClick = { /* TODO: Navigate to help */ }
+                                    onClick = onNavigateToHelpCenter
                                 )
                             }
 
-                            // Spacer sebelum logout
                             item { Spacer(Modifier.height(32.dp)) }
 
-                            // Tombol Logout
+                            // ✅ Logout sekarang pakai dialog
                             item {
                                 Button(
-                                    onClick = onLogout,
+                                    onClick = { showLogoutDialog = true },
                                     modifier = Modifier.fillMaxWidth(),
                                     colors = ButtonDefaults.buttonColors(
                                         containerColor = Color(0xFFEF5350)
@@ -213,7 +223,6 @@ fun ProfileScreen(
                                 }
                             }
 
-                            // Padding ekstra untuk bottom nav
                             item { Spacer(Modifier.height(20.dp)) }
                         }
                     }
@@ -235,10 +244,9 @@ private fun ProfileHeader(
 ) {
     val context = LocalContext.current
 
-    // ✅ bikin URL cloudinary lebih ringan + rapi (kalau memang cloudinary)
     val finalAvatarUrl = remember(avatarUrl) {
         avatarUrl.toCloudinaryAvatarUrl(
-            size = 300, // px
+            size = 300,
             fallback = "https://via.placeholder.com/200"
         )
     }
@@ -286,11 +294,7 @@ private fun ProfileHeader(
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            StatItem(
-                value = followers.toString(),
-                label = "Followers",
-                onClick = onFollowersClick
-            )
+            StatItem(value = followers.toString(), label = "Followers", onClick = onFollowersClick)
 
             Divider(
                 modifier = Modifier
@@ -299,11 +303,7 @@ private fun ProfileHeader(
                 color = Color.White.copy(alpha = 0.3f)
             )
 
-            StatItem(
-                value = following.toString(),
-                label = "Following",
-                onClick = onFollowingClick
-            )
+            StatItem(value = following.toString(), label = "Following", onClick = onFollowingClick)
         }
     }
 }
@@ -320,18 +320,9 @@ private fun StatItem(
             .clickable(enabled = onClick != null) { onClick?.invoke() }
             .padding(8.dp)
     ) {
-        Text(
-            text = value,
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color.White
-        )
+        Text(text = value, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
         Spacer(Modifier.height(4.dp))
-        Text(
-            text = label,
-            fontSize = 14.sp,
-            color = Color.White.copy(alpha = 0.8f)
-        )
+        Text(text = label, fontSize = 14.sp, color = Color.White.copy(alpha = 0.8f))
     }
 }
 
@@ -340,9 +331,7 @@ private fun TotalPointsCard(totalPoints: Int) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = DeepBlue
-        ),
+        colors = CardDefaults.cardColors(containerColor = DeepBlue),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Row(
@@ -373,9 +362,7 @@ private fun MenuItemCard(
             .fillMaxWidth()
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = CardBackground
-        ),
+        colors = CardDefaults.cardColors(containerColor = CardBackground),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
@@ -384,7 +371,6 @@ private fun MenuItemCard(
                 .padding(20.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Icon dengan background
             Box(
                 modifier = Modifier
                     .size(40.dp)
@@ -419,31 +405,24 @@ private fun MenuItemCard(
     }
 }
 
-// Helper functions
-private fun getIconBackgroundColor(title: String): Color {
-    return when (title) {
-        "Settings" -> Color(0xFFE3F2FD)
-        "View quiz history" -> Color(0xFFFFF3E0)
-        "Help Center" -> Color(0xFFE8F5E9)
-        else -> Color(0xFFF5F5F5)
-    }
+private fun getIconBackgroundColor(title: String): Color = when (title) {
+    "Settings" -> Color(0xFFE3F2FD)
+    "View quiz history" -> Color(0xFFFFF3E0)
+    "Help Center" -> Color(0xFFE8F5E9)
+    else -> Color(0xFFF5F5F5)
 }
 
-private fun getIconColor(title: String): Color {
-    return when (title) {
-        "Settings" -> Color(0xFF2196F3)
-        "View quiz history" -> Color(0xFFFF9800)
-        "Help Center" -> Color(0xFF4CAF50)
-        else -> Color.Gray
-    }
+private fun getIconColor(title: String): Color = when (title) {
+    "Settings" -> Color(0xFF2196F3)
+    "View quiz history" -> Color(0xFFFF9800)
+    "Help Center" -> Color(0xFF4CAF50)
+    else -> Color.Gray
 }
 
-private fun Int.formatPoints(): String {
-    return when {
-        this >= 1000000 -> String.format("%.1fM", this / 1000.0).replace(".0", "")
-        this >= 1000 -> String.format("%.1fK", this / 1000.0).replace(".0", "")
-        else -> this.toString()
-    }
+private fun Int.formatPoints(): String = when {
+    this >= 1000000 -> String.format("%.1fM", this / 1000.0).replace(".0", "")
+    this >= 1000 -> String.format("%.1fK", this / 1000.0).replace(".0", "")
+    else -> this.toString()
 }
 
 private fun String?.toCloudinaryAvatarUrl(
@@ -453,21 +432,13 @@ private fun String?.toCloudinaryAvatarUrl(
     val raw = this?.trim().orEmpty()
     if (raw.isEmpty()) return fallback
 
-    // pastiin https
     val httpsUrl = if (raw.startsWith("http://")) raw.replaceFirst("http://", "https://") else raw
-
-    // kalau bukan cloudinary, tetap pakai apa adanya
     if (!httpsUrl.contains("res.cloudinary.com")) return httpsUrl
 
-    // Cloudinary URL biasa punya segmen: /image/upload/
-    // Kita sisipkan transform: f_auto,q_auto,c_fill,g_face,w_{size},h_{size}
     return if (httpsUrl.contains("/image/upload/")) {
         httpsUrl.replace(
             "/image/upload/",
             "/image/upload/f_auto,q_auto,c_fill,g_face,w_${size},h_${size}/"
         )
-    } else {
-        // fallback kalau format URL-nya beda
-        httpsUrl
-    }
+    } else httpsUrl
 }

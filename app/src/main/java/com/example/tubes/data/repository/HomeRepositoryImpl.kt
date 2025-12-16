@@ -21,6 +21,22 @@ class HomeRepositoryImpl(
         return doc.toUserOrNull()
     }
 
+    suspend fun getQuizByCode(quizCode: String): com.example.tubes.data.model.Quiz? {
+        return try {
+            val snap = db.collection("quizzes")
+                .whereEqualTo("quizCode", quizCode.trim())
+                .limit(1)
+                .get()
+                .await()
+
+            val doc = snap.documents.firstOrNull() ?: return null
+            val quiz = doc.toObject(com.example.tubes.data.model.Quiz::class.java) ?: return null
+            quiz.copy(id = doc.id)
+        } catch (e: Exception) {
+            null
+        }
+    }
+
     override suspend fun getCategories(): List<Category> {
         val snapshot = db.collection("categories").get().await()
         return snapshot.documents.mapNotNull { doc ->
@@ -100,19 +116,6 @@ class HomeRepositoryImpl(
 
         return snap.documents.mapNotNull { it.toQuizOrNull() }
     }
-
-//    // Dipakai TestInformationScreen (kalau kamu mau)
-//    suspend fun getQuizById(quizId: String): Quiz {
-//        val snapshot = db.collection("quizzes")
-//            .document(quizId)
-//            .get()
-//            .await()
-//
-//        val quiz = snapshot.toObject(Quiz::class.java)
-//            ?: throw IllegalStateException("Quiz not found")
-//
-//        return quiz.copy(id = snapshot.id)
-//    }
 
     override suspend fun getAttemptCountByQuizId(quizId: String): Long {
         if (quizId.isBlank()) return 0L
