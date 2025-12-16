@@ -40,6 +40,7 @@ import com.example.tubes.ui.screen.profile.FollowingScreen
 import com.example.tubes.ui.screen.quizzes.YourQuizzesScreen
 import com.example.tubes.ui.screen.setting.AboutQuorriScreen
 import com.example.tubes.ui.screen.setting.ChangePasswordScreen
+import com.example.tubes.ui.screen.setting.HelpArticleDetailScreen
 import com.example.tubes.ui.screen.setting.HelpCenterScreen
 import com.example.tubes.ui.screen.setting.PersonalInfoScreen
 import com.example.tubes.viewmodel.*
@@ -226,16 +227,6 @@ fun StudentNavigation() {
             )
         }
 
-        // 🆕 ===== HELP CENTER =====
-        composable("helpCenter") {
-            HelpCenterScreen(
-                onBack = { navController.popBackStack() },
-                onContactSupport = {
-                    // TODO: Open email or support form
-                }
-            )
-        }
-
         // 🆕 ===== ABOUT QUORRI =====
         composable("aboutQuorri") {
             AboutQuorriScreen(
@@ -370,6 +361,21 @@ fun StudentNavigation() {
                     navController.navigate("testInfo/$quizId")
                 },
                 viewModel = yourQuizzesViewModel
+            )
+        }
+
+        composable("helpCenter") {
+            HelpCenterScreen(
+                onBack = { navController.popBackStack() },
+                onOpenArticle = { id -> navController.navigate("helpDetail/$id") }
+            )
+        }
+
+        composable("helpDetail/{id}") { entry ->
+            val id = entry.arguments?.getString("id") ?: ""
+            HelpArticleDetailScreen(
+                articleId = id,
+                onBack = { navController.popBackStack() }
             )
         }
 
