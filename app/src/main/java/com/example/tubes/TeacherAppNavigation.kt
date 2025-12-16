@@ -82,7 +82,8 @@ fun TeacherAppNavigation(
         route.startsWith("quiz_create") ||
                 route.startsWith("quiz_add_questions") ||
                 route.startsWith("teacher_view_all") ||
-                route.startsWith("teacher_quiz_qr")
+                route.startsWith("teacher_quiz_qr") ||
+                route == TeacherRoute.Notifications.route
     } ?: false
 
     Scaffold(
