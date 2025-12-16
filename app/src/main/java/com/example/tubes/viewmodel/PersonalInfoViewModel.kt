@@ -107,7 +107,7 @@ class PersonalInfoViewModel(
                 )
 
                 db.collection("users").document(userId).update(updates).await()
-
+                createProfileUpdatedNotification(userId)
                 _uiState.update {
                     it.copy(
                         isLoading = false,
@@ -153,6 +153,7 @@ class PersonalInfoViewModel(
                     .update("avatarUrl", downloadUrl)
                     .await()
 
+                createProfileUpdatedNotification(userId)
                 // update UI
                 _uiState.update {
                     it.copy(
@@ -172,6 +173,26 @@ class PersonalInfoViewModel(
             }
         }
     }
+
+    // =====================================================
+// 🔔 NOTIFICATION (GENERIC)  <-- TAMBAHAN
+// =====================================================
+    private suspend fun createProfileUpdatedNotification(userId: String) {
+        val notification = mapOf(
+            "userId" to userId,
+            "role" to "user",
+            "type" to "PROFILE_UPDATED",
+            "title" to "Profil Diperbarui",
+            "message" to "Profil Anda berhasil diperbarui.",
+            "isRead" to false,
+            "createdAt" to FieldValue.serverTimestamp()
+        )
+
+        db.collection("notifications")
+            .add(notification)
+            .await()
+    }
+
 
     private suspend fun uploadToCloudinaryUnsigned(uri: Uri): String {
         if (CLOUDINARY_CLOUD_NAME.startsWith("ISI_") || CLOUDINARY_UNSIGNED_PRESET.startsWith("ISI_")) {

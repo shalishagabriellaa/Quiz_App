@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -28,6 +29,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.*
 import com.example.tubes.data.AuthState
 import com.example.tubes.data.repository.*
+import com.example.tubes.ui.UserNotificationScreen
 import com.example.tubes.ui.screen.*
 import com.example.tubes.ui.screen.home.HomeScreen
 import com.example.tubes.ui.screen.home.components.BottomTab
@@ -154,15 +156,21 @@ fun StudentNavigation() {
         composable(Screen.LoginScreen.route) {
             LoginScreen(
                 viewModel = authViewModel,
-                onNavigateRegister = { navController.navigate(Screen.RegisterScreen.route) },
+                onNavigateRegister = {
+                    navController.navigate(Screen.RegisterScreen.route)
+                },
+                onForgotPassword = { // 👈 baru
+                    navController.navigate(Screen.ForgotPasswordScreen.route)
+                },
                 onLoginSuccess = {
-                    navController.navigate("main") {
+                    navController.navigate(Screen.MainScreen.route) {
                         popUpTo(Screen.LoginScreen.route) { inclusive = true }
                         launchSingleTop = true
                     }
                 }
             )
         }
+
 
         // ===== REGISTER =====
         composable(Screen.RegisterScreen.route) {
@@ -177,6 +185,16 @@ fun StudentNavigation() {
                 }
             )
         }
+
+        // === FORGOT PASSWORD ====
+        composable(Screen.ForgotPasswordScreen.route) {
+            ForgotPasswordScreen(
+                onBackToLogin = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
 
         // ===== SETTINGS =====
         composable(Screen.SettingScreen.route) {
@@ -197,7 +215,7 @@ fun StudentNavigation() {
 
         // 🆕 ===== PERSONAL INFO =====
         composable("personalInfo") {
-            val context = androidx.compose.ui.platform.LocalContext.current
+            val context = LocalContext.current
             val personalInfoViewModel: PersonalInfoViewModel = viewModel(
                 factory = PersonalInfoViewModelFactory(context)
             )
@@ -210,8 +228,8 @@ fun StudentNavigation() {
 
         // 🆕 ===== CHANGE PASSWORD =====
         composable("changePassword") {
-            val vm: com.example.tubes.viewmodel.ChangePasswordViewModel = viewModel(
-                factory = com.example.tubes.viewmodel.ChangePasswordViewModelFactory()
+            val vm: ChangePasswordViewModel = viewModel(
+                factory = ChangePasswordViewModelFactory()
             )
 
             ChangePasswordScreen(
@@ -373,6 +391,14 @@ fun StudentNavigation() {
             HelpArticleDetailScreen(
                 articleId = id,
                 onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(Screen.NotificationScreen.route) {
+            UserNotificationScreen(
+                onBack = {
+                    navController.popBackStack()
+                }
             )
         }
 
@@ -555,7 +581,10 @@ private fun MainScreenWithBottomNav(
                             onNavigateToQuizHistory = { navController.navigate("quizHistory/$userId") },
                             onNavigateToFollowers = { navController.navigate("followers/$userId") },
                             onNavigateToFollowing = { navController.navigate("following/$userId") },
-                            onNavigateToHelpCenter = { navController.navigate("helpCenter") }, // ✅ ini
+                            onNavigateToHelpCenter = { navController.navigate("helpCenter") },
+                            onNavigateToNotifications = {
+                                navController.navigate(Screen.NotificationScreen.route)
+                            },
                             onLogout = {
                                 authViewModel.logout()
                                 navController.navigate(Screen.LoginScreen.route) {
@@ -596,7 +625,9 @@ private fun MainScreenWithBottomNav(
                         restoreState = true
                     }
                 },
-                modifier = Modifier.align(Alignment.BottomCenter)
+                modifier = Modifier.align(Alignment.BottomCenter),
+                // Replace TODO() with the actual implementation
+                onQrClick = { showQrScanner = true }
             )
 
             QrFab(

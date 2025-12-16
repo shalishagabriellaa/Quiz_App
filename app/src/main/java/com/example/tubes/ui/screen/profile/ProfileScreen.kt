@@ -39,7 +39,8 @@ fun ProfileScreen(
     onNavigateToQuizHistory: () -> Unit = {},
     onNavigateToFollowers: () -> Unit = {},
     onNavigateToFollowing: () -> Unit = {},
-    onNavigateToHelpCenter: () -> Unit = {} // ✅ tambah ini
+    onNavigateToHelpCenter: () -> Unit = {},
+    onNavigateToNotifications: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -164,6 +165,15 @@ fun ProfileScreen(
                                 TotalPointsCard(totalPoints = uiState.totalPoints)
                             }
 
+                            item { Spacer(Modifier.height(12.dp)) }
+
+                            item {
+                                MenuItemCard(
+                                    icon = Icons.Filled.Notifications,
+                                    title = "Notifications",
+                                    onClick = onNavigateToNotifications
+                                )
+                            }
                             item { Spacer(Modifier.height(24.dp)) }
 
                             item {

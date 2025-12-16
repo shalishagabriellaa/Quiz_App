@@ -2,6 +2,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- The uses-permission tag must be a direct child of the manifest tag -->
+    <uses-permission android:name="android.permission.CAMERA" />
+
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -11,8 +14,6 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.MaterialComponents.DayNight.NoActionBar">
-
-        <!-- ✅ Jadikan MainActivity sebagai launcher -->
         <activity
             android:name=".MainActivity"
             android:exported="true">
@@ -21,12 +22,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
-        <uses-permission android:name="android.permission.CAMERA" />
-
-        <!-- ✅ Kalau nanti ada LoginActivity, tambahkan di sini -->
-        <!-- <activity android:name=".LoginActivity" android:exported="false" /> -->
-
+        <!-- The uses-permission tag was incorrectly placed here -->
     </application>
 
 </manifest>

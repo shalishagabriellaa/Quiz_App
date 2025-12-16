@@ -108,6 +108,7 @@ dependencies {
     implementation("io.coil-kt:coil-compose:2.6.0")
     implementation("com.patrykandpatrick.vico:compose:1.14.0")
     implementation("com.google.zxing:core:3.5.2")
+    implementation("com.google.firebase:firebase-messaging-ktx")
     implementation(libs.androidx.material3)
 
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")

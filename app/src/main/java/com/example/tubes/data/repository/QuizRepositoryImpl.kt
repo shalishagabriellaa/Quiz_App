@@ -4,7 +4,6 @@ import com.example.tubes.data.model.QuestionUi
 import com.example.tubes.data.model.Quiz
 import com.example.tubes.data.model.User
 import com.example.tubes.domain.repository.QuizRepository
-import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
@@ -16,19 +15,18 @@ class QuizRepositoryImpl(
     override suspend fun getQuizById(quizId: String): Quiz? {
         if (quizId.isBlank()) return null
         val doc = db.collection("quizzes").document(quizId).get().await()
-        if (!doc.exists()) return null
-        return doc.toQuizOrNull()
+        return if (doc.exists()) doc.toQuizOrNull() else null
     }
 
     override suspend fun getQuestionsByQuizId(quizId: String): List<QuestionUi> {
         if (quizId.isBlank()) return emptyList()
+
         val snap = db.collection("quizzes")
             .document(quizId)
             .collection("questions")
             .get()
             .await()
 
-        // optional: urutkan berdasarkan id kalau id angka "1","2","3"
         return snap.documents
             .mapNotNull { it.toQuestionUiOrNull() }
             .sortedBy { it.id.toIntOrNull() ?: Int.MAX_VALUE }
@@ -37,8 +35,7 @@ class QuizRepositoryImpl(
     override suspend fun getUser(userId: String): User? {
         if (userId.isBlank()) return null
         val doc = db.collection("users").document(userId).get().await()
-        if (!doc.exists()) return null
-        return doc.toUserOrNull()
+        return if (doc.exists()) doc.toUserOrNull() else null
     }
 
     override suspend fun saveQuizAttempt(
@@ -53,7 +50,11 @@ class QuizRepositoryImpl(
         pointsEarned: Int,
         userAnswersIndex: Map<String, Int>
     ) {
-        val data = hashMapOf<String, Any>(
+        if (userId.isNullOrBlank()) return
+
+        // 1️⃣ Simpan attempt
+        val attemptData = hashMapOf<String, Any>(
+            "userId" to userId,
             "quizId" to quizId,
             "quizTitle" to quizTitle,
             "score" to score,
@@ -66,25 +67,25 @@ class QuizRepositoryImpl(
             "submittedAt" to FieldValue.serverTimestamp()
         )
 
-        if (!userId.isNullOrBlank()) data["userId"] = userId
-
-        // ✅ kalau passed (pointsEarned > 0) tandai passedAt
         if (pointsEarned > 0) {
-            data["passedAt"] = FieldValue.serverTimestamp()
+            attemptData["passedAt"] = FieldValue.serverTimestamp()
         }
 
-        db.collection("quiz_attempts").add(data).await()
+        db.collection("quiz_attempts").add(attemptData).await()
+
+        // 2️⃣ Buat notifikasi (side-effect domain)
+        createQuizCompletionNotifications(
+            userId = userId,
+            quizId = quizId,
+            quizTitle = quizTitle
+        )
     }
 
     override suspend fun addUserPoints(userId: String, points: Int) {
         if (userId.isBlank() || points <= 0) return
+
         db.collection("users").document(userId)
-            .update(
-                mapOf(
-                    "totalScore" to FieldValue.increment(points.toLong())
-                    // kalau kamu mau weeklyScore dll bisa ditambah disini
-                )
-            )
+            .update("totalScore", FieldValue.increment(points.toLong()))
             .await()
     }
 
@@ -94,20 +95,19 @@ class QuizRepositoryImpl(
         val snap = db.collection("quiz_attempts")
             .whereEqualTo("userId", userId)
             .whereEqualTo("quizId", quizId)
-            .limit(20) // ambil beberapa aja, nanti difilter di client
+            .limit(20)
             .get()
             .await()
 
-        if (snap.isEmpty) return false
-
-        // ✅ cek di client: pernah ada pointsEarned > 0 (berarti pernah pass)
-        return snap.documents.any { doc ->
-            val points = doc.getLong("pointsEarned") ?: 0L
-            points > 0L
+        return snap.documents.any {
+            (it.getLong("pointsEarned") ?: 0L) > 0L
         }
     }
 
-    override suspend fun getLatestAttemptAnswers(userId: String, quizId: String): Map<String, Int> {
+    override suspend fun getLatestAttemptAnswers(
+        userId: String,
+        quizId: String
+    ): Map<String, Int> {
         if (userId.isBlank() || quizId.isBlank()) return emptyMap()
 
         val snap = db.collection("quiz_attempts")
@@ -121,7 +121,7 @@ class QuizRepositoryImpl(
         val doc = snap.documents.firstOrNull() ?: return emptyMap()
         val raw = doc.get("userAnswersIndex") as? Map<*, *> ?: return emptyMap()
 
-        return raw.entries.mapNotNull { (k, v) ->
+        return raw.mapNotNull { (k, v) ->
             val key = k as? String ?: return@mapNotNull null
             val value = when (v) {
                 is Long -> v.toInt()
@@ -130,5 +130,51 @@ class QuizRepositoryImpl(
             }
             key to value
         }.toMap()
+    }
+
+    // =====================================================
+    // 🔔 PRIVATE HELPERS (NOTIFICATION LOGIC)
+    // =====================================================
+
+    private suspend fun createQuizCompletionNotifications(
+        userId: String,
+        quizId: String,
+        quizTitle: String
+    ) {
+        val user = getUser(userId) ?: return
+
+        val quizDoc = db.collection("quizzes").document(quizId).get().await()
+        val teacherId = quizDoc.getString("authorId") ?: return
+
+        val now = FieldValue.serverTimestamp()
+
+        // 🔔 Notifikasi untuk USER
+        val userNotification = mapOf(
+            "userId" to userId,
+            "role" to "user",
+            "type" to "QUIZ_COMPLETED",
+            "title" to "Quiz Selesai",
+            "message" to "Anda telah menyelesaikan quiz \"$quizTitle\".",
+            "quizId" to quizId,
+            "isRead" to false,
+            "createdAt" to now
+        )
+
+        // 🔔 Notifikasi untuk TEACHER
+        val teacherNotification = mapOf(
+            "userId" to teacherId,
+            "role" to "teacher",
+            "type" to "QUIZ_SUBMITTED",
+            "title" to "Quiz Diselesaikan",
+            "message" to "${user.fullName} telah menyelesaikan quiz \"$quizTitle\".",
+            "quizId" to quizId,
+            "isRead" to false,
+            "createdAt" to now
+        )
+
+        val batch = db.batch()
+        batch.set(db.collection("notifications").document(), userNotification)
+        batch.set(db.collection("notifications").document(), teacherNotification)
+        batch.commit().await()
     }
 }

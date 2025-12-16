@@ -36,8 +36,9 @@ fun LoginScreen(
     viewModel: AuthViewModel,
     onNavigateRegister: () -> Unit,
     onLoginSuccess: () -> Unit,
+    onBackToLogin: () -> Unit = {},
     onForgotPassword: () -> Unit = {},
-    onBack: () -> Unit = {}
+    onNavigateBack: () -> Unit = {}
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -95,7 +96,7 @@ fun LoginScreen(
 
             // BACK BUTTON
             IconButton(
-                onClick = onBack,
+                onClick = onNavigateBack,
                 modifier = Modifier.size(32.dp)
             ) {
                 Icon(
@@ -211,7 +212,9 @@ fun LoginScreen(
                     text = "Forgot Password ?",
                     color = Color(0xFF4A90E2),
                     fontSize = 14.sp,
-                    modifier = Modifier.clickable { onForgotPassword() }
+                    modifier = Modifier.clickable {
+                        onForgotPassword()
+                    }
                 )
             }
 

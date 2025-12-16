@@ -88,50 +88,50 @@ fun TeacherDashboard(
     }
 }
 
-@Composable
-fun HeaderSection(
-    authorName: String,
-    unreadCount: Int,
-    onNotificationClick: () -> Unit
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(16.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+    @Composable
+    fun HeaderSection(
+        authorName: String,
+        unreadCount: Int,
+        onNotificationClick: () -> Unit
     ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
 
-        Text("Welcome $authorName", color = Color.White)
+            Text("Welcome $authorName", color = Color.White)
 
-        Box {
-            Icon(
-                imageVector = Icons.Default.Notifications,
-                contentDescription = "Notifications",
-                tint = Color.White,
-                modifier = Modifier
-                    .size(40.dp)
-                    .background(Color(0xFF3D4A6B), CircleShape)
-                    .padding(8.dp)
-                    .clickable(onClick = onNotificationClick)
-            )
-
-            if (unreadCount > 0) {
-                Box(
+            Box {
+                Icon(
+                    imageVector = Icons.Default.Notifications,
+                    contentDescription = "Notifications",
+                    tint = Color.White,
                     modifier = Modifier
-                        .size(16.dp)
-                        .background(Color.Red, CircleShape)
-                        .align(Alignment.TopEnd),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        unreadCount.toString(),
-                        color = Color.White,
-                        fontSize = 10.sp
-                    )
+                        .size(40.dp)
+                        .background(Color(0xFF3D4A6B), CircleShape)
+                        .padding(8.dp)
+                        .clickable(onClick = onNotificationClick)
+                )
+
+                if (unreadCount > 0) {
+                    Box(
+                        modifier = Modifier
+                            .size(16.dp)
+                            .background(Color.Red, CircleShape)
+                            .align(Alignment.TopEnd),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            unreadCount.toString(),
+                            color = Color.White,
+                            fontSize = 10.sp
+                        )
+                    }
                 }
             }
         }
     }
-}
 
 
 // Search bar tidak diubah

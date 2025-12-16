@@ -114,17 +114,13 @@ class AuthorViewModel : ViewModel() {
                     }
                 }.awaitAll() // Tunggu semua perhitungan pertanyaan selesai
 
-// Buat list yang bersih hanya berisi data untuk UI
                 val allQuizzes = allQuizzesWithRawScores.map { it.stats }
 
-// 3. Hitung Statistik Keseluruhan (Logika ini tetap sama)
                 val overallTotalParticipants = allQuizzes.sumOf { it.totalParticipants }
                 val overallCumulativeScore = allQuizzesWithRawScores.sumOf { it.rawCumulativeScore }
 
-// --- DEBUGGING LOGS (Boleh dihapus jika sudah tidak perlu) ---
                 android.util.Log.d("AuthorViewModel_Debug", "Total Skor Kumulatif Mentah: $overallCumulativeScore")
                 android.util.Log.d("AuthorViewModel_Debug", "Total Peserta Mentah: $overallTotalParticipants")
-// --- END DEBUGGING LOGS ---
 
                 val averageScoreResult = if (overallTotalParticipants > 0) overallCumulativeScore / overallTotalParticipants else 0.0
 
