@@ -58,65 +58,18 @@ data class QuizAuthor(
 @Composable
 fun TestInformationScreen(
     quizId: String,
+    viewModel: com.example.tubes.viewmodel.TestInformationViewModel,
     onBackClick: () -> Unit = {},
     onStartQuiz: () -> Unit = {}
 ) {
-    val repo = remember { HomeRepositoryImpl() }
-
-    var isLoading by remember { mutableStateOf(true) }
-    var error by remember { mutableStateOf<String?>(null) }
-    var quizDetail by remember { mutableStateOf<QuizDetail?>(null) }
+    val state by viewModel.uiState.collectAsState()
 
     LaunchedEffect(quizId) {
-        try {
-            isLoading = true
-            error = null
-
-            val quiz = repo.getQuizById(quizId) ?: throw Exception("Quiz not found")
-
-// author
-            val user = repo.getUser(quiz.authorId)
-            val authorName = user?.fullName ?: user?.fullName ?: "Unknown"
-            val avatarUrl = user?.avatarUrl ?: ""
-
-// participant text
-            val participantText = "${quiz.totalParticipants} people took this"
-
-// duration (detik → menit, minimal 1)
-            val minutes = TimeUnit.SECONDS.toMinutes(quiz.durationMinutes).let {
-                if (it <= 0) 1 else it
-            }
-
-            quizDetail = QuizDetail(
-                id = quiz.id,
-                title = quiz.title,
-                imageUrl = quiz.bannerUrl ?: "",   // ⬅️ FIX String?
-                participantCount = participantText,
-                author = QuizAuthor(
-                    name = authorName,
-                    avatarUrl = avatarUrl
-                ),
-                createdTimeMillis = quiz.createdAt?.toDate()?.time ?: 0L,
-                totalQuestions = quiz.totalQuestions.toInt(),
-                questionType = "Multiple Choice Question",
-                duration = "$minutes mins",
-                rules = listOf(
-                    "You must complete this test in one session – make sure your internet is reliable.",
-                    "1 mark awarded for a correct answer. No negative marking will be there for wrong answer.",
-                    "More you give the correct answer more chance to win the badge.",
-                    "If you don't earn a badge this time, you can retake this test once more."
-                )
-            )
-
-        } catch (e: Exception) {
-            error = e.message ?: "Unknown error"
-        } finally {
-            isLoading = false
-        }
+        viewModel.load(quizId)
     }
 
     when {
-        isLoading -> {
+        state.isLoading -> {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -127,20 +80,45 @@ fun TestInformationScreen(
             }
         }
 
-        error != null -> {
+        state.error != null -> {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(Color(0xFFEDE7F6)),
                 contentAlignment = Alignment.Center
             ) {
-                Text(text = "Error: $error", color = Color.Red)
+                Text(text = "Error: ${state.error}", color = Color.Red)
             }
         }
 
-        quizDetail != null -> {
+        else -> {
+            // ✅ pakai data dari backend
+            val rules = listOf(
+                "You must complete this test in one session – make sure your internet is reliable.",
+                "1 mark awarded for a correct answer. No negative marking will be there for wrong answer.",
+                "More you give the correct answer more chance to win the badge.",
+                "If you don't earn a badge this time, you can retake this test once more."
+            )
+
+            // mapping ke model UI lama kamu biar komponen bawah ga perlu diubah banyak
+            val quizDetail = QuizDetail(
+                id = state.quizId,
+                title = state.title,
+                imageUrl = state.imageUrl,
+                participantCount = state.participantText,
+                author = QuizAuthor(
+                    name = state.author.name,
+                    avatarUrl = state.author.avatarUrl
+                ),
+                createdTimeMillis = state.createdTimeMillis,
+                totalQuestions = state.totalQuestions,
+                questionType = "Multiple Choice Question",
+                duration = "${state.durationMinutes} mins",
+                rules = rules
+            )
+
             TestInformationContent(
-                quizDetail = quizDetail!!,
+                quizDetail = quizDetail,
                 onBackClick = onBackClick,
                 onStartQuiz = onStartQuiz
             )

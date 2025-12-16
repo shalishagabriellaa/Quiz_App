@@ -101,18 +101,18 @@ class HomeRepositoryImpl(
         return snap.documents.mapNotNull { it.toQuizOrNull() }
     }
 
-    // Dipakai TestInformationScreen (kalau kamu mau)
-    suspend fun getQuizById(quizId: String): Quiz {
-        val snapshot = db.collection("quizzes")
-            .document(quizId)
-            .get()
-            .await()
-
-        val quiz = snapshot.toObject(Quiz::class.java)
-            ?: throw IllegalStateException("Quiz not found")
-
-        return quiz.copy(id = snapshot.id)
-    }
+//    // Dipakai TestInformationScreen (kalau kamu mau)
+//    suspend fun getQuizById(quizId: String): Quiz {
+//        val snapshot = db.collection("quizzes")
+//            .document(quizId)
+//            .get()
+//            .await()
+//
+//        val quiz = snapshot.toObject(Quiz::class.java)
+//            ?: throw IllegalStateException("Quiz not found")
+//
+//        return quiz.copy(id = snapshot.id)
+//    }
 
     override suspend fun getAttemptCountByQuizId(quizId: String): Long {
         if (quizId.isBlank()) return 0L
@@ -173,6 +173,13 @@ class HomeRepositoryImpl(
             Log.e("HomeRepository", "getLeaderboardUsers EXCEPTION", e)
             emptyList()
         }
+    }
+
+    override suspend fun getQuizById(quizId: String): Quiz? {
+        if (quizId.isBlank()) return null
+        val doc = db.collection("quizzes").document(quizId).get().await()
+        if (!doc.exists()) return null
+        return doc.toQuizOrNull()
     }
 
 }

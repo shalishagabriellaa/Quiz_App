@@ -65,6 +65,9 @@ fun StudentNavigation() {
     val categorySpecifyViewModel: CategorySpecifyViewModel = viewModel(
         factory = CategorySpecifyViewModelFactory(homeRepository)
     )
+    val testInfoViewModel: TestInformationViewModel = viewModel(
+        factory = TestInformationViewModelFactory(homeRepository)
+    )
     val homeViewModel: HomeViewModel = viewModel(
         factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -298,6 +301,7 @@ fun StudentNavigation() {
             val quizId = backStackEntry.arguments?.getString("quizId") ?: ""
             TestInformationScreen(
                 quizId = quizId,
+                viewModel = testInfoViewModel,
                 onBackClick = { navController.popBackStack() },
                 onStartQuiz = { navController.navigate(Screen.QuizScreen.route + "/$quizId") }
             )
