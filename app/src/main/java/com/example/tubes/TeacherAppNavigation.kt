@@ -68,26 +68,24 @@ fun TeacherAppNavigation(
     val authState by authViewModel.authState.collectAsState()
     val authorId = (authState as? AuthState.Success)?.userId
 
-    // ✅ tambahin ViewAll biar bottom bar hilang di halaman view all
-    val hideBottomBarRoutes = listOf(
-        TeacherRoute.QuizCreate.route,
-        TeacherRoute.QuizAddQuestions.route,
-        TeacherRoute.ViewAll.route // ✅ baru
-    )
+    // ✅ HIDE BOTTOM BAR untuk semua route yang "detail/fullscreen" (punya parameter juga)
+    val shouldHideBottomBar = currentRoute?.let { route ->
+        route.startsWith("quiz_create") ||
+                route.startsWith("quiz_add_questions") ||
+                route.startsWith("teacher_view_all") ||
+                route.startsWith("teacher_quiz_qr")
+    } ?: false
 
     Scaffold(
         bottomBar = {
-            val shouldHideBottomBar =
-                currentRoute == TeacherRoute.QuizCreate.route ||
-                        currentRoute == TeacherRoute.QuizAddQuestions.route ||
-                        (currentRoute?.startsWith("teacher_view_all/") == true)
-
             if (!shouldHideBottomBar) {
                 TeacherBottomNavigation(
                     selectedRoute = currentRoute ?: TeacherRoute.Dashboard.route,
                     onNavigate = { route ->
                         navController.navigate(route) {
-                            popUpTo(navController.graph.startDestinationId) { saveState = true }
+                            popUpTo(navController.graph.startDestinationId) {
+                                saveState = true
+                            }
                             launchSingleTop = true
                             restoreState = true
                         }
@@ -112,8 +110,6 @@ fun TeacherAppNavigation(
                     onOpenNotifications = {
                         navController.navigate(TeacherRoute.Notifications.route)
                     },
-
-                    // ✅ INI YANG BIKIN "VIEW ALL" PINDAH SCREEN
                     onViewAllAverage = {
                         navController.navigate(
                             TeacherRoute.ViewAll.createRoute(TeacherViewAllType.AVERAGE_SCORE.name)
@@ -138,8 +134,12 @@ fun TeacherAppNavigation(
                 arguments = listOf(navArgument("type") { type = NavType.StringType })
             ) { backStackEntry ->
 
-                val typeStr = backStackEntry.arguments?.getString("type") ?: TeacherViewAllType.RECENT_QUIZ.name
-                val type = runCatching { TeacherViewAllType.valueOf(typeStr) }.getOrElse { TeacherViewAllType.RECENT_QUIZ }
+                val typeStr =
+                    backStackEntry.arguments?.getString("type")
+                        ?: TeacherViewAllType.RECENT_QUIZ.name
+
+                val type = runCatching { TeacherViewAllType.valueOf(typeStr) }
+                    .getOrElse { TeacherViewAllType.RECENT_QUIZ }
 
                 val vm: com.example.tubes.viewmodel.TeacherViewAllViewModel =
                     viewModel(backStackEntry)
@@ -242,8 +242,11 @@ fun TeacherAppNavigation(
                     authorId = authorId!!,
                     viewModel = viewModel,
                     onNavigateToAddQuestions = { qId, totalQuestions ->
-                        navController.navigate(TeacherRoute.QuizAddQuestions.createRoute(qId, totalQuestions))
-                    }
+                        navController.navigate(
+                            TeacherRoute.QuizAddQuestions.createRoute(qId, totalQuestions)
+                        )
+                    },
+                    onBack = { navController.popBackStack() }
                 )
             }
 
@@ -270,7 +273,11 @@ fun TeacherAppNavigation(
                 val viewModel: TeacherQuizQrViewModel =
                     viewModel(backStackEntry, factory = TeacherQuizQrViewModelFactory(quizRepo))
 
-                TeacherQuizQrScreen(quizId = quizId, viewModel = viewModel)
+                TeacherQuizQrScreen(
+                    quizId = quizId,
+                    viewModel = viewModel,
+                    onBack = { navController.popBackStack() }
+                )
             }
 
             // ================= BANK =================
@@ -280,7 +287,10 @@ fun TeacherAppNavigation(
                     val viewModel: TeacherQuestionBankViewModel =
                         viewModel(
                             backStackEntry,
-                            factory = TeacherQuestionBankViewModelFactory(repository = repo, authorId = authorId)
+                            factory = TeacherQuestionBankViewModelFactory(
+                                repository = repo,
+                                authorId = authorId
+                            )
                         )
                     TeacherQuestionBankScreen(viewModel = viewModel)
                 }
@@ -309,8 +319,11 @@ fun TeacherAppNavigation(
                     authorId = authorId,
                     viewModel = viewModel,
                     onNavigateToAddQuestions = { quizId, totalQuestions ->
-                        navController.navigate(TeacherRoute.QuizAddQuestions.createRoute(quizId, totalQuestions))
-                    }
+                        navController.navigate(
+                            TeacherRoute.QuizAddQuestions.createRoute(quizId, totalQuestions)
+                        )
+                    },
+                    onBack = { navController.popBackStack() }
                 )
             }
 
@@ -334,7 +347,10 @@ fun TeacherAppNavigation(
                 val viewModel: TeacherProfileViewModel =
                     viewModel(
                         backStackEntry,
-                        factory = TeacherProfileViewModelFactory(repository = repo, authorId = authorId)
+                        factory = TeacherProfileViewModelFactory(
+                            repository = repo,
+                            authorId = authorId
+                        )
                     )
 
                 TeacherProfileScreen(viewModel = viewModel)
@@ -348,7 +364,10 @@ fun TeacherAppNavigation(
                 val viewModel: TeacherNotificationViewModel =
                     viewModel(
                         backStackEntry,
-                        factory = TeacherNotificationViewModelFactory(repository = repo, userId = authorId)
+                        factory = TeacherNotificationViewModelFactory(
+                            repository = repo,
+                            userId = authorId
+                        )
                     )
 
                 TeacherNotificationScreen(
