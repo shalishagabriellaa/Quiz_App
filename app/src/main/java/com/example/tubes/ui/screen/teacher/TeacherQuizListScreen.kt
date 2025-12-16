@@ -37,53 +37,51 @@ fun TeacherQuizListScreen(
     onAddQuizClick: () -> Unit,
     onEditQuizClick: (String) -> Unit,
     onGenerateQrClick: (String) -> Unit
-
 ) {
     val quizzes by viewModel.quizzes.collectAsState()
-
-    // Data status statis atau dari ViewModel jika ada
     val statusCounts by viewModel.statusCounts.collectAsState()
+    val deleteState by viewModel.deleteState.collectAsState()
 
     LaunchedEffect(authorId) {
         viewModel.load(authorId)
     }
 
     Scaffold(
-        containerColor = Color(0xFF282C4C) // Warna gelap dari screenshot
+        containerColor = Color(0xFF282C4C)
     ) { paddingValues ->
+
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
                 .background(Color(0xFF282C4C))
         ) {
+
             item {
-                // Header Title
                 Text(
                     text = "My Quizzes",
                     color = Color.White,
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(top = 16.dp, start = 20.dp, end = 20.dp)
+                    modifier = Modifier.padding(16.dp)
                 )
 
-                // Search Bar
-                QuizSearchBar(modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp))
+                QuizSearchBar(
+                    modifier = Modifier.padding(horizontal = 20.dp)
+                )
             }
 
             item {
-
                 AddQuizButton(
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
+                    modifier = Modifier.padding(20.dp),
                     onClick = onAddQuizClick
                 )
             }
 
             item {
-                // Quiz Status Row (Menggunakan data statis/hipotesis statusCounts)
                 QuizStatusRow(
                     statusCounts = statusCounts,
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp)
+                    modifier = Modifier.padding(horizontal = 20.dp)
                 )
             }
 
@@ -96,12 +94,54 @@ fun TeacherQuizListScreen(
                     onEditClick = {
                         onEditQuizClick(quiz.id)
                     },
-                    onDeleteClick = { viewModel.delete(quiz.id, authorId) }
+                    onDeleteClick = {
+                        viewModel.onDeleteClick(quiz)
+                    }
                 )
             }
         }
     }
+
+    // =========================
+    // DELETE CONFIRMATION DIALOG
+    // =========================
+    if (deleteState.showDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                viewModel.cancelDelete()
+            },
+            title = {
+                Text("Hapus Quiz")
+            },
+            text = {
+                Text(
+                    "Yakin ingin menghapus quiz \"${deleteState.quizTitle}\"?"
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.confirmDelete(authorId)
+                    },
+                    enabled = !deleteState.isDeleting
+                ) {
+                    Text("Hapus")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.cancelDelete()
+                    }
+                ) {
+                    Text("Batal")
+                }
+            }
+        )
+    }
 }
+
+
 
 
 @Composable

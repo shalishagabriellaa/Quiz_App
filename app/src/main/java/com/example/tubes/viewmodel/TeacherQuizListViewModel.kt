@@ -12,30 +12,77 @@ class TeacherQuizListViewModel(
     private val repository: TeacherQuizRepository,
 ) : ViewModel() {
 
-    private val _quizzes = MutableStateFlow<List<TeacherQuizUi>>(emptyList())
+    // =========================
+    // QUIZ LIST
+    // =========================
+    private val _quizzes =
+        MutableStateFlow<List<TeacherQuizUi>>(emptyList())
     val quizzes: StateFlow<List<TeacherQuizUi>> = _quizzes
 
-    // 🔑 TAMBAHAN BARU
-    private val _statusCounts = MutableStateFlow<Map<String, Int>>(emptyMap())
+    // =========================
+    // STATUS COUNTS
+    // =========================
+    private val _statusCounts =
+        MutableStateFlow<Map<String, Int>>(emptyMap())
     val statusCounts: StateFlow<Map<String, Int>> = _statusCounts
 
+    // =========================
+    // DELETE STATE
+    // =========================
+    data class DeleteState(
+        val showDialog: Boolean = false,
+        val quizId: String? = null,
+        val quizTitle: String? = null,
+        val isDeleting: Boolean = false
+    )
+
+    private val _deleteState =
+        MutableStateFlow(DeleteState())
+    val deleteState: StateFlow<DeleteState> = _deleteState
+
+    // =========================
+    // LOAD QUIZZES
+    // =========================
     fun load(authorId: String) {
         viewModelScope.launch {
             val result = repository.getTeacherQuizzes(authorId)
 
             _quizzes.value = result
 
-            // 🔥 HITUNG STATUS DI SINI
             _statusCounts.value = result
                 .groupingBy { it.status }
                 .eachCount()
         }
     }
 
-    fun delete(quizId: String, authorId: String) {
+    // =========================
+    // DELETE FLOW
+    // =========================
+    fun onDeleteClick(quiz: TeacherQuizUi) {
+        _deleteState.value = DeleteState(
+            showDialog = true,
+            quizId = quiz.id,
+            quizTitle = quiz.title
+        )
+    }
+
+    fun cancelDelete() {
+        _deleteState.value = DeleteState()
+    }
+
+    fun confirmDelete(authorId: String) {
+        val quizId = _deleteState.value.quizId ?: return
+
         viewModelScope.launch {
+            _deleteState.value =
+                _deleteState.value.copy(isDeleting = true)
+
             repository.deleteTeacherQuizzes(quizId)
-            load(authorId) // auto refresh
+
+            _deleteState.value = DeleteState()
+
+            load(authorId) // refresh list
         }
     }
 }
+

@@ -51,6 +51,19 @@ data class QuizUiState(
     val questionResults: Map<String, Boolean> = emptyMap()
 )
 
+data class TeacherQuizListUiState(
+    val quizzes: List<TeacherQuizUi> = emptyList(),
+    val isLoading: Boolean = false,
+
+    // DELETE
+    val showDeleteDialog: Boolean = false,
+    val quizToDeleteId: String? = null,
+    val quizToDeleteTitle: String? = null,
+    val isDeleting: Boolean = false,
+    val error: String? = null
+)
+
+
 fun String.toAnswerIndex(): Int {
     return when {
         this.startsWith("A.", ignoreCase = true) -> 0

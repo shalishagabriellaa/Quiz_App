@@ -5,8 +5,13 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.Button
@@ -18,7 +23,9 @@ import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
@@ -47,25 +54,13 @@ fun TeacherCreateQuizScreen(
     onNavigateToAddQuestions: (String, Int) -> Unit
 ) {
     val form by viewModel.form.collectAsState()
-    Log.d("EDIT_DEBUG", "SCREEN COMPOSED")
-    // ---------- Dummy Data ----------
-    val categories = listOf(
-        "Math",
-        "Science",
-        "History",
-        "Programming"
-    )
+    val validation by viewModel.validation.collectAsState()
 
-    val difficulties = listOf(
-        "easy",
-        "medium",
-        "hard",
-        "extreme"
-    )
+    val categories = listOf("Math", "Science", "History", "Programming")
+    val difficulties = listOf("easy", "medium", "hard", "extreme")
 
-    // ---------- Image Picker ----------
     val imagePicker = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
+        ActivityResultContracts.GetContent()
     ) { uri ->
         uri?.let {
             viewModel.updateForm(form.copy(bannerUri = it))
@@ -74,6 +69,8 @@ fun TeacherCreateQuizScreen(
 
     Column(
         modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .padding(16.dp)
     ) {
 
@@ -84,8 +81,16 @@ fun TeacherCreateQuizScreen(
                 viewModel.updateForm(form.copy(title = it))
             },
             label = { Text("Quiz Title") },
-            modifier = Modifier.padding(bottom = 12.dp)
+            isError = validation.titleError != null,
+            supportingText = {
+                validation.titleError?.let {
+                    Text(it, color = MaterialTheme.colorScheme.error)
+                }
+            },
+            modifier = Modifier.fillMaxWidth()
         )
+
+        Spacer(Modifier.height(12.dp))
 
         /* ================= DESCRIPTION ================= */
         TextField(
@@ -94,169 +99,191 @@ fun TeacherCreateQuizScreen(
                 viewModel.updateForm(form.copy(description = it))
             },
             label = { Text("Description") },
-            modifier = Modifier.padding(bottom = 12.dp)
+            modifier = Modifier.fillMaxWidth()
         )
 
-        /* ================= CATEGORY DROPDOWN ================= */
-        var categoryExpanded by remember { mutableStateOf(false) }
+        Spacer(Modifier.height(12.dp))
 
-        ExposedDropdownMenuBox(
-            expanded = categoryExpanded,
-            onExpandedChange = { categoryExpanded = !categoryExpanded }
-        ) {
-            TextField(
-                value = form.categoryName,
-                onValueChange = {},
-                readOnly = true,
-                label = { Text("Category") },
-                trailingIcon = {
-                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = categoryExpanded)
-                },
-                modifier = Modifier
-                    .menuAnchor()
-                    .padding(bottom = 12.dp)
-            )
-
-            ExposedDropdownMenu(
-                expanded = categoryExpanded,
-                onDismissRequest = { categoryExpanded = false }
-            ) {
-                categories.forEach { category ->
-                    DropdownMenuItem(
-                        text = { Text(category) },
-                        onClick = {
-                            viewModel.updateForm(
-                                form.copy(
-                                    categoryName = category,
-                                    categoryId = category.lowercase()
-                                )
-                            )
-                            categoryExpanded = false
-                        }
+        /* ================= CATEGORY ================= */
+        DropdownField(
+            label = "Category",
+            value = form.categoryName,
+            options = categories,
+            isError = validation.categoryError,
+            onSelect = {
+                viewModel.updateForm(
+                    form.copy(
+                        categoryName = it,
+                        categoryId = it.lowercase()
                     )
-                }
+                )
             }
-        }
+        )
+
+        Spacer(Modifier.height(12.dp))
 
         /* ================= DURATION ================= */
-        TextField(
+        NumberField(
+            label = "Duration (minutes)",
             value = form.durationMinutes,
-            onValueChange = {
-                viewModel.updateForm(form.copy(durationMinutes = it))
-            },
-            label = { Text("Duration (minutes)") },
-            modifier = Modifier.padding(bottom = 12.dp)
-        )
-
-        TextField(
-            value = form.totalQuestions,
-            onValueChange = {
-                if (it.all { ch -> ch.isDigit() }) {
-                    viewModel.updateForm(form.copy(totalQuestions = it))
-                }
-            },
-            label = { Text("Total Questions") },
-            modifier = Modifier.padding(bottom = 12.dp)
-        )
-
-
-        /* ================= DIFFICULTY DROPDOWN ================= */
-        var difficultyExpanded by remember { mutableStateOf(false) }
-
-        ExposedDropdownMenuBox(
-            expanded = difficultyExpanded,
-            onExpandedChange = { difficultyExpanded = !difficultyExpanded }
+            error = validation.durationError
         ) {
-            TextField(
-                value = form.difficulty,
-                onValueChange = {},
-                readOnly = true,
-                label = { Text("Difficulty Level") },
-                trailingIcon = {
-                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = difficultyExpanded)
-                },
-                modifier = Modifier
-                    .menuAnchor()
-                    .padding(bottom = 12.dp)
-            )
-
-            ExposedDropdownMenu(
-                expanded = difficultyExpanded,
-                onDismissRequest = { difficultyExpanded = false }
-            ) {
-                difficulties.forEach { level ->
-                    DropdownMenuItem(
-                        text = { Text(level.capitalize()) },
-                        onClick = {
-                            viewModel.updateForm(form.copy(difficulty = level))
-                            difficultyExpanded = false
-                        }
-                    )
-                }
-            }
+            viewModel.updateForm(form.copy(durationMinutes = it))
         }
+
+        Spacer(Modifier.height(12.dp))
+
+        /* ================= TOTAL QUESTIONS ================= */
+        NumberField(
+            label = "Total Questions",
+            value = form.totalQuestions,
+            error = validation.totalQuestionsError
+        ) {
+            viewModel.updateForm(form.copy(totalQuestions = it))
+        }
+
+        Spacer(Modifier.height(12.dp))
+
+        /* ================= DIFFICULTY ================= */
+        DropdownField(
+            label = "Difficulty",
+            value = form.difficulty,
+            options = difficulties,
+            isError = validation.difficultyError,
+            displayMapper = { it.replaceFirstChar(Char::uppercase) },
+            onSelect = {
+                viewModel.updateForm(form.copy(difficulty = it))
+            }
+        )
+
+        Spacer(Modifier.height(12.dp))
 
         /* ================= PASSING GRADE ================= */
-        TextField(
+        NumberField(
+            label = "Passing Grade",
             value = form.passingGrade,
-            onValueChange = {
-                viewModel.updateForm(form.copy(passingGrade = it))
-            },
-            label = { Text("Passing Grade") },
-            modifier = Modifier.padding(bottom = 12.dp)
-        )
+            error = validation.passingGradeError
+        ) {
+            viewModel.updateForm(form.copy(passingGrade = it))
+        }
 
+        Spacer(Modifier.height(12.dp))
+
+        /* ================= DATES ================= */
         PublishDateField(
-            valueMillis = form.publishAtMillis,
             label = "Publish Date",
-            onDateSelected = {
-                viewModel.updateForm(form.copy(publishAtMillis = it))
-            }
-        )
+            valueMillis = form.publishAtMillis,
+            error = validation.publishDateError
+        ) {
+            viewModel.updateForm(form.copy(publishAtMillis = it))
+        }
+
+        Spacer(Modifier.height(12.dp))
 
         PublishDateField(
-            valueMillis = form.finishAtMillis,
             label = "Finish Date",
-            onDateSelected = {
-                viewModel.updateForm(form.copy(finishAtMillis = it))
-            }
-        )
+            valueMillis = form.finishAtMillis,
+            error = validation.finishDateError
+        ) {
+            viewModel.updateForm(form.copy(finishAtMillis = it))
+        }
 
-
+        Spacer(Modifier.height(16.dp))
 
         /* ================= BANNER ================= */
-        Button(
-            modifier = Modifier.padding(bottom = 16.dp),
-            onClick = { imagePicker.launch("image/*") }
-        ) {
-            Text(
-                if (form.bannerUri == null) "Pick Quiz Banner"
-                else "Change Quiz Banner"
-            )
+        Button(onClick = { imagePicker.launch("image/*") }) {
+            Text(if (form.bannerUri == null) "Pick Quiz Banner" else "Change Quiz Banner")
         }
+
+        Spacer(Modifier.height(24.dp))
 
         /* ================= SUBMIT ================= */
         Button(
             onClick = {
                 viewModel.submit(authorId) { quizId ->
-                        onNavigateToAddQuestions(
-                            quizId,
-                            viewModel.form.value.totalQuestions.toIntOrNull() ?: 0
-                        )
+                    onNavigateToAddQuestions(
+                        quizId,
+                        form.totalQuestions.toIntOrNull() ?: 0
+                    )
                 }
             },
+            enabled = validation.isValid,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text(
-                text = if (viewModel.isEditMode)
-                    "Save Changes"
-                else
-                    "Create Quiz"
-            )
+            Text(if (viewModel.isEditMode) "Save Changes" else "Create Quiz")
         }
-
     }
 }
+
+@Composable
+fun NumberField(
+    label: String,
+    value: String,
+    error: String?,
+    onChange: (String) -> Unit
+) {
+    TextField(
+        value = value,
+        onValueChange = {
+            if (it.all(Char::isDigit)) onChange(it)
+        },
+        label = { Text(label) },
+        isError = error != null,
+        supportingText = {
+            error?.let {
+                Text(it, color = MaterialTheme.colorScheme.error)
+            }
+        },
+        modifier = Modifier.fillMaxWidth()
+    )
+}
+
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DropdownField(
+    label: String,
+    value: String,
+    options: List<String>,
+    isError: String?,
+    displayMapper: (String) -> String = { it },
+    onSelect: (String) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    ExposedDropdownMenuBox(expanded, { expanded = !expanded }) {
+        TextField(
+            value = displayMapper(value),
+            onValueChange = {},
+            readOnly = true,
+            label = { Text(label) },
+            isError = isError != null,
+            supportingText = {
+                isError?.let {
+                    Text(it, color = MaterialTheme.colorScheme.error)
+                }
+            },
+            trailingIcon = {
+                ExposedDropdownMenuDefaults.TrailingIcon(expanded)
+            },
+            modifier = Modifier.menuAnchor().fillMaxWidth()
+        )
+
+        ExposedDropdownMenu(expanded, { expanded = false }) {
+            options.forEach {
+                DropdownMenuItem(
+                    text = { Text(displayMapper(it)) },
+                    onClick = {
+                        onSelect(it)
+                        expanded = false
+                    }
+                )
+            }
+        }
+    }
+}
+
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -312,3 +339,57 @@ fun PublishDateField(
         modifier = Modifier.padding(bottom = 12.dp)
     )
 }
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun PublishDateField(
+    label: String,
+    valueMillis: Long?,
+    error: String?,
+    onDateSelected: (Long) -> Unit
+) {
+    var showDialog by remember { mutableStateOf(false) }
+
+    val datePickerState = rememberDatePickerState(
+        initialSelectedDateMillis = valueMillis
+    )
+
+    if (showDialog) {
+        DatePickerDialog(
+            onDismissRequest = { showDialog = false },
+            confirmButton = {
+                Button(onClick = {
+                    datePickerState.selectedDateMillis?.let(onDateSelected)
+                    showDialog = false
+                }) { Text("OK") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
+
+    TextField(
+        value = valueMillis?.let { formatDate(it) } ?: "",
+        onValueChange = {},
+        readOnly = true,
+        label = { Text(label) },
+        isError = error != null,
+        supportingText = {
+            error?.let {
+                Text(it, color = MaterialTheme.colorScheme.error)
+            }
+        },
+        trailingIcon = {
+            IconButton(onClick = { showDialog = true }) {
+                Icon(Icons.Default.DateRange, null)
+            }
+        },
+        modifier = Modifier.fillMaxWidth()
+    )
+}
+
