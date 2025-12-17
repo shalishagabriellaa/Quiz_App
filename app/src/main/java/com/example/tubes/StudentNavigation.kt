@@ -33,6 +33,8 @@ import com.example.tubes.ui.screen.quizzes.YourQuizzesScreen
 import com.example.tubes.ui.screen.setting.*
 import com.example.tubes.ui.screen.qr.QrScanScreen
 import com.example.tubes.viewmodel.*
+import com.example.tubes.ui.screen.SplashScreen
+import com.google.firebase.auth.FirebaseAuth
 
 @Composable
 fun StudentNavigation() {
@@ -125,17 +127,20 @@ fun StudentNavigation() {
     // Root NavHost
     NavHost(
         navController = navController,
-        startDestination = "splash"
+        startDestination = Screen.LoginScreen.route
     ) {
 
-        composable("splash") {
-            SplashGate(authState = authState) { route ->
-                navController.navigate(route) {
-                    popUpTo("splash") { inclusive = true }
-                    launchSingleTop = true
-                }
-            }
-        }
+//        composable("splash") {
+//            SplashScreen(
+//                onAnimationFinished = {
+//                    val route = if (authState is AuthState.Success) "main" else Screen.LoginScreen.route
+//                    navController.navigate(route) {
+//                        popUpTo("splash") { inclusive = true }
+//                        launchSingleTop = true
+//                    }
+//                }
+//            )
+//        }
 
         composable(Screen.LoginScreen.route) {
             LoginScreen(
@@ -144,7 +149,7 @@ fun StudentNavigation() {
                 onForgotPassword = { navController.navigate(Screen.ForgotPasswordScreen.route) },
                 onLoginSuccess = {
                     navController.navigate("main") {
-                        popUpTo(Screen.LoginScreen.route) { inclusive = true }
+                        popUpTo("splash") { inclusive = true }   // ✅ buang splash + login dari stack
                         launchSingleTop = true
                     }
                 }
@@ -484,8 +489,14 @@ private fun MainScreenWithBottomNav(
                     }
 
                     composable("quizzes") {
-                        val authState by authViewModel.authState.collectAsState()
-                        val userId = (authState as? AuthState.Success)?.userId ?: ""
+                        val userId = FirebaseAuth.getInstance().currentUser?.uid.orEmpty()
+
+                        if (userId.isBlank()) {
+                            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                Text("User ID not found. Please login again.")
+                            }
+                            return@composable
+                        }
 
                         YourQuizzesScreen(
                             userId = userId,

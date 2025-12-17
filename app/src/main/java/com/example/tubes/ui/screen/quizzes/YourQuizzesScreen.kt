@@ -36,7 +36,9 @@ fun YourQuizzesScreen(
     val uiState by viewModel.uiState.collectAsState()
 
     LaunchedEffect(userId) {
-        viewModel.loadYourQuizzes(userId)
+        if (userId.isNotBlank()) {
+            viewModel.loadYourQuizzes(userId)
+        }
     }
 
     Scaffold(

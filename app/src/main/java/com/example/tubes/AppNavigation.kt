@@ -1,26 +1,23 @@
 package com.example.tubes
 
 import android.util.Log
-
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf // <-- IMPORT BARU
-import androidx.compose.runtime.remember // <-- IMPORT BARU
-import androidx.compose.runtime.setValue // <-- IMPORT BARU
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.tubes.data.repository.AuthRepositoryImpl
-import com.example.tubes.viewmodel.AuthViewModel
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import com.example.tubes.data.AuthState
-
+import com.example.tubes.data.repository.AuthRepositoryImpl
+import com.example.tubes.ui.screen.SplashScreen
+import com.example.tubes.viewmodel.AuthViewModel
 
 @Composable
 fun AppNavigation() {
@@ -33,39 +30,53 @@ fun AppNavigation() {
         }
     )
 
-    var isReady by remember { mutableStateOf(false) }
     val authState by authViewModel.authState.collectAsState()
+    val navController = rememberNavController()
 
-    if (authState !is AuthState.Idle && authState !is AuthState.Loading) {
-        isReady = true
-    }
-    if (!isReady) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            CircularProgressIndicator()
-        }
-    } else {
-        when (val state = authState) {
-            is AuthState.Success -> {
-                Log.d("AppNavigation", "State is Stable. Role: ${state.role}. Navigating...")
-                when (state.role) {
-                    "admin" -> {
-                        RolePlaceholderScreen("Admin Dashboard")
+    // ✅ Root nav: dibuat sekali, bukan remount StudentNavigation berkali-kali
+    NavHost(
+        navController = navController,
+        startDestination = "app_splash"
+    ) {
+
+        composable("app_splash") {
+            var hasNavigated by rememberSaveable { mutableStateOf(false) }
+
+            SplashScreen(
+                onAnimationFinished = {
+                    if (hasNavigated) return@SplashScreen
+                    hasNavigated = true
+
+                    val target = when (val s = authState) {
+                        is AuthState.Success -> when (s.role) {
+                            "admin" -> "admin_root"
+                            "author" -> "teacher_root"
+                            else -> "student_root"
+                        }
+                        else -> "student_root"
                     }
-                    "author" -> {
-                        TeacherAppNavigation()
-                    }
-                    else -> { // "user"
-                        StudentNavigation()
+
+                    navController.navigate(target) {
+                        popUpTo("app_splash") { inclusive = true }
+                        launchSingleTop = true
                     }
                 }
-            }
-            else -> { // AuthState.LoggedOut, AuthState.Error
-                Log.d("AppNavigation", "State is Stable. User not logged in. Navigating to Login...")
-                StudentNavigation()
-            }
+            )
+        }
+
+        // ✅ ROOT: student flow (punya login/register/main, dll)
+        composable("student_root") {
+            StudentNavigation()
+        }
+
+        // ✅ ROOT: teacher flow
+        composable("teacher_root") {
+            TeacherAppNavigation(authViewModel = authViewModel) // pakai authViewModel yang sama
+        }
+
+        // ✅ ROOT: admin placeholder
+        composable("admin_root") {
+            RolePlaceholderScreen("Admin Dashboard")
         }
     }
 }
@@ -73,6 +84,6 @@ fun AppNavigation() {
 @Composable
 fun RolePlaceholderScreen(role: String) {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text(text = "Navigasi untuk peran: $role")
+        androidx.compose.material3.Text(text = "Navigasi untuk peran: $role")
     }
 }
