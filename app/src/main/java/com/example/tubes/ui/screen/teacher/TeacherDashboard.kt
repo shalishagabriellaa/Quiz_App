@@ -29,6 +29,8 @@ import com.example.tubes.viewmodel.AuthorStats
 import com.example.tubes.viewmodel.AuthorViewModel
 import com.example.tubes.viewmodel.ParticipantSubmission
 import com.example.tubes.viewmodel.QuizWithStats
+import com.example.tubes.viewmodel.TeacherDashboardUiState
+
 
 // Color Palette
 private val DarkNavy = Color(0xFF2E3856)
@@ -299,14 +301,14 @@ fun StatsSection(stats: AuthorStats) {
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                StatItemModern(
-                    icon = Icons.Default.AccountCircle,
-                    iconBg = Color(0xFFC5CAE9),
-                    iconColor = Color(0xFF5E35B1),
-                    label = "Followers",
-                    value = "1.2K",
-                    valueColor = Color(0xFF512DA8)
-                )
+//                StatItemModern(
+//                    icon = Icons.Default.AccountCircle,
+//                    iconBg = Color(0xFFC5CAE9),
+//                    iconColor = Color(0xFF5E35B1),
+//                    label = "Followers",
+//                    value = "1.2K",
+//                    valueColor = Color(0xFF512DA8)
+//                )
                 StatItemModern(
                     icon = Icons.Default.Star,
                     iconBg = Color(0xFFFFF9C4),
@@ -412,14 +414,14 @@ fun AverageScoreSection(
         Spacer(modifier = Modifier.height(12.dp))
 
         quizzes.forEach { quiz ->
-            ScoreBarItem(quiz.title, quiz.averageScore.toInt())
+            ScoreBarItem(quiz.title, quiz.averageScore)
             Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
 
 @Composable
-fun ScoreBarItem(subject: String, avgScore: Int) {
+fun ScoreBarItem(subject: String, avgScore: Double) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -443,7 +445,7 @@ fun ScoreBarItem(subject: String, avgScore: Int) {
                         .padding(horizontal = 12.dp, vertical = 4.dp)
                 ) {
                     Text(
-                        text = "AVG $avgScore",
+                        text = "AVG ${"%.1f".format(avgScore)}",
                         color = LightPink,
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold
@@ -460,7 +462,7 @@ fun ScoreBarItem(subject: String, avgScore: Int) {
             ) {
                 Box(
                     modifier = Modifier
-                        .fillMaxWidth(avgScore / 100f)
+                        .fillMaxWidth((avgScore / 100.0).toFloat())
                         .height(10.dp)
                         .clip(RoundedCornerShape(5.dp))
                         .background(

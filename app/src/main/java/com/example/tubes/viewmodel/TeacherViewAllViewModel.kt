@@ -100,10 +100,11 @@ class TeacherViewAllViewModel : ViewModel() {
         val subs = snapshot.documents.map { doc ->
             ParticipantSubmission(
                 studentName = doc.getString("studentName") ?: "Unknown",
-                quizTitle = doc.getString("quizTitle") ?: "Judul Kuis Tidak Ada",
-                score = doc.getLong("lastScore") ?: 0L,
-                finishedAt = doc.getDate("lastPlayedAt")
+                quizTitle = doc.getString("quizTitle") ?: "",
+                score = doc.getLong("score") ?: 0L,
+                submittedAt = doc.getDate("submittedAt")
             )
+
         }
 
         _uiState.update { it.copy(submissions = subs) }

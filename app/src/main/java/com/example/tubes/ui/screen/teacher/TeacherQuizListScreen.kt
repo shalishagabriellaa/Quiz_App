@@ -520,19 +520,27 @@ private fun QuizCardModern(
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 ActionOutlined(
-                    text = "Detail",
+                    text = "QR",
                     icon = Icons.Default.Visibility,
                     color = Color(0xFF2B2F55),
                     onClick = onDetailClick,
                     modifier = Modifier.weight(1f)
                 )
+
+                // ===== INI BAGIAN YANG DIUBAH =====
+                // Cek apakah status kuis adalah "draft" (tidak case-sensitive)
+                val isEditable = quiz.status.equals("draft", ignoreCase = true)
+
                 ActionOutlined(
                     text = "Edit",
                     icon = Icons.Default.Edit,
                     color = Color(0xFFEE8A4E),
                     onClick = onEditClick,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    enabled = isEditable // <-- TERAPKAN logikanya di sini
                 )
+                // ====================================
+
                 ActionOutlined(
                     text = "Delete",
                     icon = Icons.Default.Delete,
@@ -595,24 +603,31 @@ private fun ActionOutlined(
     icon: ImageVector,
     color: Color,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true // <-- 1. TAMBAHKAN parameter ini
 ) {
+    // 2. Tentukan warna berdasarkan status enabled
+    val finalColor = if (enabled) color else Color.Gray.copy(alpha = 0.5f)
+
     OutlinedButton(
         onClick = onClick,
         modifier = modifier.height(36.dp),
         shape = RoundedCornerShape(10.dp),
-        border = BorderStroke(1.dp, color),
+        // 3. Gunakan warna yang sudah ditentukan untuk border dan konten
+        border = BorderStroke(1.dp, finalColor),
         contentPadding = PaddingValues(horizontal = 10.dp),
         colors = ButtonDefaults.outlinedButtonColors(
             containerColor = Color.White,
-            contentColor = color
-        )
+            contentColor = finalColor
+        ),
+        enabled = enabled // <-- 4. TERAPKAN status enabled pada tombol
     ) {
         Icon(icon, contentDescription = null, modifier = Modifier.size(16.dp))
         Spacer(Modifier.width(6.dp))
         Text(text = text, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
     }
 }
+
 
 /* =========================
    DATE FORMAT (model pakai createdAtMillis)

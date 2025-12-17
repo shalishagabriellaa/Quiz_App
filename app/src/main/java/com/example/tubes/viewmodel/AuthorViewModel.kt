@@ -2,6 +2,8 @@ package com.example.tubes.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.firestore.DocumentSnapshot
+import com.google.firebase.firestore.FieldPath
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import kotlinx.coroutines.async
@@ -11,9 +13,12 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
-import java.util.Calendar
+import java.util.Date
 
-// DATA CLASS UNTUK MENAMPUNG SEMUA DATA DASHBOARD (TETAP SAMA)
+// =====================================================
+// DATA MODELS
+// =====================================================
+
 data class QuizWithStats(
     val quizId: String = "",
     val title: String = "",
@@ -21,18 +26,22 @@ data class QuizWithStats(
     val totalParticipants: Int = 0,
     val averageScore: Double = 0.0,
     val authorName: String = "",
-    val createdAt: java.util.Date? = null
+    val createdAt: Date? = null
 )
 
-// PERUBAHAN: DATA CLASS INI SEKARANG MEREFLEKSIKAN STRUKTUR 'quizResults' ANDA
 data class ParticipantSubmission(
-    val studentName: String = "Unknown", // Kita asumsikan nama diambil dari tempat lain
-    val quizTitle: String = "",
-    val score: Long = 0,
-    val finishedAt: java.util.Date? = null // Diambil dari 'lastPlayedAt'
+    val studentName: String,
+    val quizTitle: String,
+    val score: Long,
+    val submittedAt: Date?
 )
 
-// STATE UTAMA UNTUK DASHBOARD (TETAP SAMA)
+data class AuthorStats(
+    val totalQuizzes: Int = 0,
+    val totalParticipants: Int = 0,
+    val averageQuizScore: Double = 0.0
+)
+
 data class TeacherDashboardUiState(
     val isLoading: Boolean = true,
     val error: String? = null,
@@ -41,36 +50,48 @@ data class TeacherDashboardUiState(
     val recentQuizzes: List<QuizWithStats> = emptyList(),
     val recentSubmissions: List<ParticipantSubmission> = emptyList(),
     val authorName: String = "Teacher",
-    val unreadNotificationCount: Int = 0
+    val unreadNotificationCount: Int = 0,
+
+    // Pagination
+    val isLoadingMore: Boolean = false,
+    val hasMoreSubmissions: Boolean = true
 )
 
-// Data class AuthorStats tetap sama
-data class AuthorStats(
-    val totalQuizzes: Int = 0,
-    val totalParticipants: Int = 0,
-    val averageQuizScore: Double = 0.0
-)
-
+// =====================================================
+// VIEWMODEL
+// =====================================================
 
 class AuthorViewModel : ViewModel() {
-    private val _uiState = MutableStateFlow(TeacherDashboardUiState())
-    val uiState = _uiState.asStateFlow()
 
     private val db = FirebaseFirestore.getInstance()
 
+    private val _uiState = MutableStateFlow(TeacherDashboardUiState())
+    val uiState = _uiState.asStateFlow()
+
+    private var lastSubmissionSnapshot: DocumentSnapshot? = null
+    private val PAGE_SIZE = 10
+
+    // =====================================================
+    // LOAD DASHBOARD
+    // =====================================================
     fun loadDashboardData(authorId: String?) {
         if (authorId.isNullOrEmpty()) {
-            _uiState.update { it.copy(isLoading = false, error = "Author ID tidak valid.") }
+            _uiState.update {
+                it.copy(isLoading = false, error = "Author ID tidak valid")
+            }
             return
         }
 
-        _uiState.update { it.copy(isLoading = true) }
+        _uiState.update { it.copy(isLoading = true, error = null) }
+        lastSubmissionSnapshot = null
 
         viewModelScope.launch {
             try {
-                val authorDocument = db.collection("users").document(authorId).get().await()
-                val authorName = authorDocument.getString("fullName") ?: "Teacher"
-                android.util.Log.d("AuthorViewModel_Debug", "Dokumen user ditemukan? -> ${authorDocument.exists()}")
+                // ===== AUTHOR =====
+                val authorDoc = db.collection("users").document(authorId).get().await()
+                val authorName = authorDoc.getString("fullName") ?: "Teacher"
+
+                // ===== QUIZZES =====
                 val quizzesSnapshot = db.collection("quizzes")
                     .whereEqualTo("authorId", authorId)
                     .orderBy("createdAt", Query.Direction.DESCENDING)
@@ -78,100 +99,158 @@ class AuthorViewModel : ViewModel() {
                     .await()
 
                 if (quizzesSnapshot.isEmpty) {
-                    _uiState.update { it.copy(isLoading = false, authorName = authorName) }
+                    _uiState.update {
+                        it.copy(isLoading = false, authorName = authorName)
+                    }
                     return@launch
                 }
 
-// ... (setelah quizzesSnapshot diambil) ...
-
-// PERUBAIKAN BESAR: Kita akan memproses setiap kuis secara asinkron
-// untuk mendapatkan jumlah pertanyaan dari subkoleksi
-                val allQuizzesWithRawScores = quizzesSnapshot.documents.map { doc ->
-                    // Jalankan coroutine baru untuk setiap kuis
+                // ===== PROCESS QUIZZES (ASYNC) =====
+// ===== PROCESS QUIZZES (ASYNC) =====
+                val quizResults = quizzesSnapshot.documents.map { doc ->
                     viewModelScope.async {
-                        // HITUNG PERTANYAAN DARI SUBKOLEKSI
-                        val questionsSnapshot = db.collection("quizzes").document(doc.id)
-                            .collection("questions").get().await()
-                        val questionCount = questionsSnapshot.size() // <-- Ini jumlah pertanyaan sebenarnya
+                        val questionsSnapshot = db.collection("quizzes")
+                            .document(doc.id)
+                            .collection("questions")
+                            .get()
+                            .await()
 
-                        // Gunakan object anonymous untuk membawa data mentah
+                        val totalParticipants =
+                            (doc.getLong("totalParticipants") ?: 0L).toInt()
+
+                        // ===== PERBAIKAN DI SINI =====
+                        // Hapus pengambilan "cumulativeScore" yang tidak ada.
+                        // Langsung ambil "averageScore" dari dokumen.
+                        val averageScoreFromDoc = doc.getDouble("averageScore") ?: 0.0
+
                         object {
-                            val stats = QuizWithStats(
+                            val quiz = QuizWithStats(
                                 quizId = doc.id,
                                 title = doc.getString("title") ?: "",
-                                totalQuestions = questionCount, // <-- GUNAKAN HASIL HITUNGAN
-                                totalParticipants = (doc.getLong("totalParticipants") ?: 0L).toInt(),
-                                averageScore = run {
-                                    val cumulative = (doc.getLong("cumulativeScore") ?: 0L).toDouble()
-                                    val participants = (doc.getLong("totalParticipants") ?: 0L).toInt()
-                                    if (participants > 0) cumulative / participants else 0.0
-                                },
+                                totalQuestions = questionsSnapshot.size(),
+                                totalParticipants = totalParticipants,
+
+                                // Gunakan nilai yang sudah diambil, tidak perlu hitung ulang.
+                                averageScore = averageScoreFromDoc,
+
                                 authorName = authorName,
                                 createdAt = doc.getDate("createdAt")
                             )
-                            val rawCumulativeScore = (doc.getLong("cumulativeScore") ?: 0L).toDouble()
+
+                            val rawScore = averageScoreFromDoc * totalParticipants
                         }
                     }
-                }.awaitAll() // Tunggu semua perhitungan pertanyaan selesai
+                }.awaitAll()
 
-                val allQuizzes = allQuizzesWithRawScores.map { it.stats }
 
-                val overallTotalParticipants = allQuizzes.sumOf { it.totalParticipants }
-                val overallCumulativeScore = allQuizzesWithRawScores.sumOf { it.rawCumulativeScore }
-
-                android.util.Log.d("AuthorViewModel_Debug", "Total Skor Kumulatif Mentah: $overallCumulativeScore")
-                android.util.Log.d("AuthorViewModel_Debug", "Total Peserta Mentah: $overallTotalParticipants")
-
-                val averageScoreResult = if (overallTotalParticipants > 0) overallCumulativeScore / overallTotalParticipants else 0.0
-
-// --- DEBUGGING LOGS (Boleh dihapus jika sudah tidak perlu) ---
-                android.util.Log.d("AuthorViewModel_Debug", "Hasil Rata-rata Skor (ViewModel): $averageScoreResult")
+                val allQuizzes = quizResults.map { it.quiz }
+                val overallParticipants = allQuizzes.sumOf { it.totalParticipants }
+                val overallScore = quizResults.sumOf { it.rawScore }
 
                 val overallStats = AuthorStats(
                     totalQuizzes = allQuizzes.size,
-                    totalParticipants = overallTotalParticipants,
-                    averageQuizScore = averageScoreResult
+                    totalParticipants = overallParticipants,
+                    averageQuizScore =
+                        if (overallParticipants > 0)
+                            overallScore / overallParticipants
+                        else 0.0
                 )
 
-                val averageScoresPerQuiz = allQuizzes
-                val recentQuizzes = allQuizzes
+                // ===== PARTICIPANT ACTIVITY (FIRST PAGE) =====
+                val quizIds = allQuizzes.map { it.quizId }
+                val submissions = loadParticipantSubmissions(quizIds, loadMore = false)
 
-// 6. Ambil aktivitas peserta terbaru (Logika ini tetap sama)
-                var recentSubmissions: List<ParticipantSubmission> = emptyList()
-                try {
-                    val recentSubmissionsSnapshot = db.collectionGroup("quizResults")
-                        .orderBy("lastPlayedAt", Query.Direction.DESCENDING)
-                        .get()
-                        .await()
-
-                    recentSubmissions = recentSubmissionsSnapshot.documents.map { doc ->
-                        ParticipantSubmission(
-                            quizTitle = doc.getString("quizTitle") ?: "Judul Kuis Tidak Ada",
-                            score = doc.getLong("lastScore") ?: 0,
-                            finishedAt = doc.getDate("lastPlayedAt")
-                        )
-                    }
-                } catch (e: Exception) {
-                    android.util.Log.e("AuthViewModel_QuizResults", "Error fetching quizResults: ${e.message}")
-                }
-
-// Final Update ke UI State
                 _uiState.update {
                     it.copy(
                         isLoading = false,
                         authorName = authorName,
                         overallStats = overallStats,
-                        averageScoresPerQuiz = allQuizzes,      // FULL
-                        recentQuizzes = allQuizzes,              // FULL
-                        recentSubmissions = recentSubmissions,   // FULL
-                        error = null
+                        averageScoresPerQuiz = allQuizzes,
+                        recentQuizzes = allQuizzes,
+                        recentSubmissions = submissions,
+                        hasMoreSubmissions = submissions.size == PAGE_SIZE
                     )
                 }
+
             } catch (e: Exception) {
                 _uiState.update {
-                    it.copy(isLoading = false, error = "Gagal memuat data: ${e.localizedMessage}")
+                    it.copy(
+                        isLoading = false,
+                        error = e.localizedMessage ?: "Gagal memuat dashboard"
+                    )
                 }
             }
+        }
+    }
+
+    // =====================================================
+    // LOAD MORE PARTICIPANT ACTIVITY
+    // =====================================================
+    fun loadMoreSubmissions(authorQuizIds: List<String>) {
+        if (_uiState.value.isLoadingMore || !_uiState.value.hasMoreSubmissions) return
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoadingMore = true) }
+
+            val more = loadParticipantSubmissions(authorQuizIds, loadMore = true)
+
+            _uiState.update {
+                it.copy(
+                    isLoadingMore = false,
+                    recentSubmissions = it.recentSubmissions + more,
+                    hasMoreSubmissions = more.size == PAGE_SIZE
+                )
+            }
+        }
+    }
+
+    // =====================================================
+    // CORE: LOAD quiz_attempts (PAGINATED)
+    // =====================================================
+    private suspend fun loadParticipantSubmissions(
+        quizIds: List<String>,
+        loadMore: Boolean
+    ): List<ParticipantSubmission> {
+
+        if (quizIds.isEmpty()) return emptyList()
+
+        var query = db.collection("quiz_attempts")
+            .whereIn("quizId", quizIds.take(10)) // Firestore limit
+            .orderBy("submittedAt", Query.Direction.DESCENDING)
+            .limit(PAGE_SIZE.toLong())
+
+        if (loadMore && lastSubmissionSnapshot != null) {
+            query = query.startAfter(lastSubmissionSnapshot!!)
+        }
+
+        val snapshot = query.get().await()
+        if (snapshot.isEmpty) return emptyList()
+
+        lastSubmissionSnapshot = snapshot.documents.last()
+
+        val userIds = snapshot.documents
+            .mapNotNull { it.getString("userId") }
+            .distinct()
+
+        val userNameMap = mutableMapOf<String, String>()
+        if (userIds.isNotEmpty()) {
+            val usersSnapshot = db.collection("users")
+                .whereIn(FieldPath.documentId(), userIds.take(10))
+                .get()
+                .await()
+
+            usersSnapshot.documents.forEach {
+                userNameMap[it.id] = it.getString("fullName") ?: "Unknown"
+            }
+        }
+
+        return snapshot.documents.map { doc ->
+            ParticipantSubmission(
+                studentName = userNameMap[doc.getString("userId")] ?: "Unknown",
+                quizTitle = doc.getString("quizTitle") ?: "",
+                score = doc.getLong("score") ?: 0,
+                submittedAt = doc.getDate("submittedAt")
+            )
         }
     }
 }
