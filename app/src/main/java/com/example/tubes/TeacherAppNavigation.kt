@@ -114,7 +114,7 @@ fun TeacherAppNavigation(
         NavHost(
             navController = navController,
             startDestination = TeacherRoute.Dashboard.route,
-            modifier = Modifier
+                    modifier = Modifier
                 .padding(paddingValues)
                 .fillMaxSize()
         ) {
