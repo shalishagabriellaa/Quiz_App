@@ -174,7 +174,7 @@ fun ProfileScreen(
                                     onClick = onNavigateToNotifications
                                 )
                             }
-                            item { Spacer(Modifier.height(24.dp)) }
+                            item { Spacer(Modifier.height(12.dp)) }
 
                             item {
                                 MenuItemCard(
@@ -299,22 +299,22 @@ private fun ProfileHeader(
 
         Spacer(Modifier.height(24.dp))
 
-        Row(
-            modifier = Modifier.fillMaxWidth(0.6f),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            StatItem(value = followers.toString(), label = "Followers", onClick = onFollowersClick)
-
-            Divider(
-                modifier = Modifier
-                    .width(1.dp)
-                    .height(40.dp),
-                color = Color.White.copy(alpha = 0.3f)
-            )
-
-            StatItem(value = following.toString(), label = "Following", onClick = onFollowingClick)
-        }
+//        Row(
+//            modifier = Modifier.fillMaxWidth(0.6f),
+//            horizontalArrangement = Arrangement.SpaceEvenly,
+//            verticalAlignment = Alignment.CenterVertically
+//        ) {
+//            StatItem(value = followers.toString(), label = "Followers", onClick = onFollowersClick)
+//
+//            Divider(
+//                modifier = Modifier
+//                    .width(1.dp)
+//                    .height(40.dp),
+//                color = Color.White.copy(alpha = 0.3f)
+//            )
+//
+//            StatItem(value = following.toString(), label = "Following", onClick = onFollowingClick)
+//        }
     }
 }
 

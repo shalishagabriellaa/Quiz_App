@@ -2,13 +2,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Camera permission -->
+    <!-- ✅ TARUH DI SINI (DI LUAR <application>) -->
     <uses-permission android:name="android.permission.CAMERA" />
-
-    <!-- Kamera opsional -->
-    <uses-feature
-        android:name="android.hardware.camera"
-        android:required="false" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
 
     <application
         android:allowBackup="true"
@@ -20,6 +16,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.MaterialComponents.DayNight.NoActionBar">
 
+        <!-- ✅ Jadikan MainActivity sebagai launcher -->
         <activity
             android:name=".MainActivity"
             android:exported="true">
@@ -28,6 +25,9 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- ✅ Kalau nanti ada LoginActivity, tambahkan di sini -->
+        <!-- <activity android:name=".LoginActivity" android:exported="false" /> -->
 
     </application>
 

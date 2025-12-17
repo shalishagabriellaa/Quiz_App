@@ -43,13 +43,12 @@ enum class BottomTab(val label: String) {
 fun QuizBottomBar(
     selected: BottomTab,
     onSelected: (BottomTab) -> Unit,
-    onQrClick: () -> Unit,              // ✅ tambah ini
+    onQrClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Box(
         modifier = modifier
             .fillMaxWidth()
-            // JANGAN clip container-nya
             .background(BarPurple)
             .shadow(
                 elevation = 12.dp,
@@ -81,7 +80,7 @@ fun QuizBottomBar(
                 selected = selected == BottomTab.Quizzes
             ) { onSelected(BottomTab.Quizzes) }
 
-            Spacer(Modifier.width(64.dp)) // ruang QR
+            Spacer(Modifier.width(64.dp))
 
             BarItem(
                 text = BottomTab.Leaderboard.label,
@@ -96,19 +95,9 @@ fun QuizBottomBar(
             ) { onSelected(BottomTab.Profile) }
         }
 
-        // ✅ tombol QR beneran ditaruh overlay center
         QrCenterButton(
             modifier = Modifier.align(Alignment.TopCenter).offset(y = (-26).dp),
             onClick = onQrClick
-        )
-
-        Box(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .offset(y = (-8).dp)
-                .size(width = 120.dp, height = 6.dp)
-                .clip(RoundedCornerShape(50))
-                .background(Color.White.copy(alpha = 0.95f))
         )
     }
 }
