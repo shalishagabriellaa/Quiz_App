@@ -30,13 +30,16 @@ fun User.toAuthorUi(): AuthorUi = AuthorUi(
     avatarUrl = avatarUrl
 )
 
-fun UserQuizResult.toYourQuizUi(): YourQuizUi = YourQuizUi(
-    quizId = quizId,
-    title = quizTitle,
-    bannerUrl = quizBannerUrl,
-    questionsCount = totalQuestions,    // ✅ dulu questionsCount
-    lastScore = lastScore,
-    correctAnswers = correctAnswers,
-    totalQuestions = totalQuestions,
-    lastPlayedAt = lastPlayedAt
-)
+fun UserQuizResult.toYourQuizUi(): YourQuizUi {
+    return YourQuizUi(
+        quizId = quizId,
+        title = quizTitle,
+        score = score,
+        percentage = percentage,
+        totalQuestions = totalQuestions,
+        correctAnswers = correctAnswers,
+        submittedAt = submittedAt
+    )
+}
+
+

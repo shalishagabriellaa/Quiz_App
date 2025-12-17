@@ -46,21 +46,33 @@ class QuizViewModel(
     private var hasAutoSubmitted = false
     private var currentQuizId: String = ""
 
+// ... (kode lainnya tetap sama)
+
     fun loadQuiz(quizId: String) {
         viewModelScope.launch {
+            // JANGAN MUAT ULANG KUIS YANG SAMA JIKA SUDAH AKTIF dan BELUM DI-SUBMIT
+            // Ini akan mencegah reset yang tidak perlu jika ada recomposition
+            if (currentQuizId == quizId && !_uiState.value.isSubmitted) return@launch
+
             try {
+                // ===== PERBAIKAN UTAMA: RESET STATE DI SINI =====
+                // Ini memastikan kita memulai dari state yang bersih setiap kali kuis baru dimuat.
+                // Kita set isLoading = true agar UI menampilkan loading indicator.
+                _uiState.value = QuizUiState(isLoading = true)
+                // ===========================================
+
                 currentQuizId = quizId
                 hasAutoSubmitted = false
                 timerJob?.cancel()
-
-                _uiState.value = QuizUiState(isLoading = true)
 
                 val quiz = repo.getQuizById(quizId) ?: throw Exception("Quiz not found")
                 val questions = repo.getQuestionsByQuizId(quizId)
 
                 val durationSeconds = (quiz.durationMinutes * 60L).toInt().coerceAtLeast(60)
 
-                _uiState.value = QuizUiState(
+                // Sekarang kita hanya perlu meng-update state yang sudah bersih
+                // dengan data kuis yang baru menggunakan .copy()
+                _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     error = null,
                     quizTitle = quiz.title,
@@ -73,13 +85,16 @@ class QuizViewModel(
 
                 startTimer()
             } catch (e: Exception) {
-                _uiState.value = QuizUiState(
+                _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     error = e.message ?: "Unknown error"
                 )
             }
         }
     }
+
+// ... (sisa kode tidak perlu diubah)
+
 
     private fun startTimer() {
         timerJob?.cancel()

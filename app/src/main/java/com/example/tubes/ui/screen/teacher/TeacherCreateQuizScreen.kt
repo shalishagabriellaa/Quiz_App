@@ -286,15 +286,15 @@ fun TeacherCreateQuizScreen(
                         Spacer(Modifier.height(12.dp))
 
                         // Banner* (tanpa bannerError biar aman)
-                        LabeledField(
-                            label = "Quiz Thumbnail*",
-                            error = null
-                        ) {
-                            UploadField(
-                                text = if (form.bannerUri == null) "Upload banner (png)" else "Change banner",
-                                onClick = { imagePicker.launch("image/*") }
-                            )
-                        }
+//                        LabeledField(
+//                            label = "Quiz Thumbnail*",
+//                            error = null
+//                        ) {
+//                            UploadField(
+//                                text = if (form.bannerUri == null) "Upload banner (png)" else "Change banner",
+//                                onClick = { imagePicker.launch("image/*") }
+//                            )
+//                        }
 
                         Spacer(Modifier.height(18.dp))
 

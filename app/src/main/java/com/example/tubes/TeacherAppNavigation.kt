@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -27,6 +28,7 @@ import com.example.tubes.data.repository.TeacherProfileRepositoryImpl
 import com.example.tubes.data.repository.TeacherQuestionBankRepositoryImpl
 import com.example.tubes.data.repository.TeacherQuestionRepositoryImpl
 import com.example.tubes.data.repository.TeacherQuizRepositoryImpl
+import com.example.tubes.ui.screen.LoginScreen
 import com.example.tubes.ui.screen.setting.AboutQuorriScreen
 import com.example.tubes.ui.screen.teacher.QuizPreviewScreen
 import com.example.tubes.ui.screen.teacher.TeacherAddQuestionScreen
@@ -66,10 +68,12 @@ import com.example.tubes.viewmodel.ChangePasswordViewModel
 import com.example.tubes.viewmodel.ChangePasswordViewModelFactory
 import com.example.tubes.ui.screen.teacher.TeacherChangePasswordScreen
 import com.example.tubes.ui.screen.teacher.TeacherPersonalInfoScreen
+import com.example.tubes.ui.screen.SplashScreen
+
 @Composable
 fun TeacherAppNavigation(
-    authViewModel: AuthViewModel = viewModel()
-) {
+    authViewModel: AuthViewModel)
+{
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -79,7 +83,9 @@ fun TeacherAppNavigation(
 
     // ✅ HIDE BOTTOM BAR untuk semua route yang "detail/fullscreen" (punya parameter juga)
     val shouldHideBottomBar = currentRoute?.let { route ->
-        route.startsWith("quiz_create") ||
+        route == "teacher_splash" ||
+                route == Screen.LoginScreen.route ||
+                route.startsWith("quiz_create") ||
                 route.startsWith("quiz_add_questions") ||
                 route.startsWith("teacher_view_all") ||
                 route.startsWith("teacher_quiz_qr") ||
@@ -113,6 +119,26 @@ fun TeacherAppNavigation(
                 .fillMaxSize()
         ) {
 
+//            composable("teacher_splash") {
+//                SplashScreen(
+//                    onAnimationFinished = {
+//                        val goDashboard = (authState as? AuthState.Success)?.role == "author"
+//
+//                        if (goDashboard) {
+//                            navController.navigate(TeacherRoute.Dashboard.route) {
+//                                popUpTo("teacher_splash") { inclusive = true }
+//                                launchSingleTop = true
+//                            }
+//                        } else {
+//                            navController.navigate(Screen.LoginScreen.route) {
+//                                popUpTo("teacher_splash") { inclusive = true }
+//                                launchSingleTop = true
+//                            }
+//                        }
+//                    }
+//                )
+//            }
+
             // ================= DASHBOARD =================
             composable(TeacherRoute.Dashboard.route) {
                 TeacherDashboard(
@@ -137,6 +163,20 @@ fun TeacherAppNavigation(
                     }
                 )
             }
+
+//            composable(Screen.LoginScreen.route) {
+//                LoginScreen(
+//                    viewModel = authViewModel,
+//                    onNavigateRegister = { navController.navigate(Screen.RegisterScreen.route) },
+//                    onForgotPassword = { navController.navigate(Screen.ForgotPasswordScreen.route) },
+//                    onLoginSuccess = {
+//                        navController.navigate(TeacherRoute.Dashboard.route) {
+//                            popUpTo("teacher_splash") { inclusive = true }  // ✅ buang splash + login
+//                            launchSingleTop = true
+//                        }
+//                    }
+//                )
+//            }
 
             // ================= VIEW ALL (FETCH FROM DB) =================
             composable(
@@ -444,6 +484,25 @@ fun TeacherAppNavigation(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun TeacherSplashGate(
+    authState: AuthState,
+    onGoDashboard: () -> Unit,
+    onGoLogin: () -> Unit
+) {
+    LaunchedEffect(authState) {
+        if (authState is AuthState.Success && authState.role == "author") {
+            onGoDashboard()
+        } else if (authState !is AuthState.Loading && authState !is AuthState.Idle) {
+            onGoLogin()
+        }
+    }
+
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        CircularProgressIndicator()
     }
 }
 

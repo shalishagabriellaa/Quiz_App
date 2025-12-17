@@ -6,4 +6,5 @@ sealed class AuthState {
     data class Success(val userId: String, val role: String) : AuthState()
     data class Error(val message: String) : AuthState()
     object LoggedOut : AuthState()
+    object Unauthenticated : AuthState()
 }

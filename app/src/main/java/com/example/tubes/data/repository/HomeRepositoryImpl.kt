@@ -128,10 +128,9 @@ class HomeRepositoryImpl(
 
     override suspend fun getUserQuizResults(userId: String): List<UserQuizResult> {
         return try {
-            val snapshot = db.collection("users")
-                .document(userId)
-                .collection("quizResults")
-                .orderBy("lastPlayedAt", Query.Direction.DESCENDING)
+            val snapshot = db.collection("quiz_attempts")
+                .whereEqualTo("userId", userId)
+                .orderBy("submittedAt", Query.Direction.DESCENDING)
                 .get()
                 .await()
 
@@ -143,6 +142,7 @@ class HomeRepositoryImpl(
             emptyList()
         }
     }
+
 
     override suspend fun getLeaderboardUsers(
         limit: Int,
@@ -161,13 +161,9 @@ class HomeRepositoryImpl(
             snapshot.documents.mapNotNull { doc ->
                 val user = doc.toObject(User::class.java) ?: return@mapNotNull null
 
-                // ⬅️ Filter hanya role "user" di sisi Kotlin
                 if (user.role != "user") return@mapNotNull null
 
-                // (Opsional) kalau mau, skip yang skornya 0
                 if (orderField == "weeklyScore" && user.totalScore == 0L) {
-                    // atau gunakan user.weeklyScore kalau sudah ada di model
-                    // if (user.weeklyScore == 0L) return@mapNotNull null
                 }
 
                 user.copy(uid = doc.id)
